@@ -27,7 +27,12 @@ const notifyHint = computed(() => {
   if (!state.settings.notify) return null
   const a = notifAction.value
   if (a === "pending") {
-    return { cls: "muted", text: "正在向浏览器申请权限，请在地址栏附近弹出的询问框中确认…" }
+    return {
+      cls: "muted",
+      text: inIframe
+        ? "正在申请权限…预览窗口通常会拦截此请求，稍等片刻会给出解决办法"
+        : "正在向浏览器申请权限，请在地址栏附近弹出的询问框中确认…"
+    }
   }
   if (notifPerm.value === "granted") {
     return { cls: "ok", text: "✅ 桌面通知已开启" }
@@ -37,11 +42,19 @@ const notifyHint = computed(() => {
   }
   if (notifPerm.value === "denied") {
     return inIframe
-      ? { cls: "err", text: "❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请复制当前地址，在独立的浏览器窗口打开后再点「开启通知」" }
+      ? { cls: "err", text: "❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请点击下方按钮在独立浏览器窗口打开后再点「开启通知」" }
       : { cls: "err", text: "❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」" }
   }
   if (a === "error") {
     return { cls: "err", text: "❌ 权限申请失败：当前环境可能不允许申请通知，请在独立浏览器窗口中打开本页重试" }
+  }
+  if (a === "timeout") {
+    return {
+      cls: "err",
+      text: inIframe
+        ? "❌ 申请无响应：预览窗口拦截了通知权限（浏览器不会弹出询问框）。请点击下方按钮在独立窗口打开，再点「开启通知」"
+        : "❌ 申请超时无响应：若没看到询问弹窗，说明环境拦截了申请，请更换 Chrome / Edge 后重试；若弹窗仍在显示，直接选择即可"
+    }
   }
   if (a === "dismissed") {
     return { cls: "err", text: "弹窗未做选择，可再次点击「开启通知」" }
@@ -51,6 +64,18 @@ const notifyHint = computed(() => {
     ? { cls: "muted", text: "💡 嵌入预览窗口中浏览器通常会拦截通知权限，建议在独立浏览器窗口中使用" }
     : { cls: "muted", text: "尚未授权，点击「开启通知」并在弹窗中允许，番茄结束即可收到桌面提醒" }
 })
+
+// 在预览面板中被拦截时，提供一键在独立窗口打开的出口
+const showStandaloneBtn = computed(
+  () =>
+    state.settings.notify &&
+    inIframe &&
+    (notifPerm.value === "denied" || notifAction.value === "timeout")
+)
+
+function openStandalone() {
+  window.open(window.location.href, "_blank")
+}
 </script>
 
 <template>
@@ -118,6 +143,13 @@ const notifyHint = computed(() => {
     </div>
     <p v-if="notifyHint" class="perm-hint" :class="notifyHint.cls">
       {{ notifyHint.text }}
+      <button
+        v-if="showStandaloneBtn"
+        class="btn small standalone"
+        @click="openStandalone"
+      >
+        ↗ 在独立窗口打开
+      </button>
     </p>
 
     <div class="settings">
@@ -264,6 +296,10 @@ const notifyHint = computed(() => {
 }
 .perm-hint.err {
   color: var(--warn);
+}
+.perm-hint .standalone {
+  display: block;
+  margin: 8px auto 0;
 }
 .settings {
   display: flex;

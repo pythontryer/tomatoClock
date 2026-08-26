@@ -91,7 +91,22 @@ export function usePomodoro() {
     }
     notifAction.value = "pending"
     return new Promise((resolve) => {
+      let done = false
+
+      // 看门狗：被拦截的环境（如 iframe 预览面板）里 requestPermission 的
+      // Promise 可能永远不落定（不弹窗、无回调、无异常），超时后给出明确
+      // 提示而不是一直停在「申请中」。权限本身仍是 default，可稍后重试；
+      // 若用户在弹窗上晚一点做出选择，settle 仍会正常接管并更新状态。
+      const watchdog = setTimeout(() => {
+        if (done) return
+        notifAction.value = "timeout"
+        resolve("default")
+      }, 5000)
+
       const settle = (p) => {
+        if (done) return
+        done = true
+        clearTimeout(watchdog)
         notifPerm.value = p
         notifAction.value =
           p === "granted" ? "granted" : p === "denied" ? "denied" : "dismissed"
@@ -101,11 +116,15 @@ export function usePomodoro() {
         }
         resolve(p)
       }
+
       try {
         // 现代浏览器返回 Promise；旧 Safari 只支持回调形式
         const r = Notification.requestPermission(settle)
         if (r && typeof r.then === "function") {
           r.then(settle).catch(() => {
+            if (done) return
+            done = true
+            clearTimeout(watchdog)
             notifPerm.value = "denied"
             notifAction.value = "error"
             resolve("denied")
@@ -113,9 +132,13 @@ export function usePomodoro() {
         }
       } catch (e) {
         // 某些嵌入环境（iframe/权限策略）会直接抛错
-        notifPerm.value = "denied"
-        notifAction.value = "error"
-        resolve("denied")
+        if (!done) {
+          done = true
+          clearTimeout(watchdog)
+          notifPerm.value = "denied"
+          notifAction.value = "error"
+          resolve("denied")
+        }
       }
     })
   }
