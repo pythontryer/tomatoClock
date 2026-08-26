@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { usePomodoro } from "../composables/usePomodoro"
 import { useStore } from "../store/useStore"
 
@@ -15,12 +15,30 @@ const {
   pause,
   reset,
   switchMode,
-  requestNotify
+  requestNotify,
+  playChime
 } = usePomodoro()
 const { state } = useStore()
 
 const R = 120
 const C = 2 * Math.PI * R
+
+// 提示音试听反馈：{ type: 'ok' | 'err', text }
+const soundMsg = ref(null)
+let soundMsgTimer = null
+async function testSound() {
+  const ok = await playChime()
+  soundMsg.value = ok
+    ? { type: "ok", text: "✅ 提示音已播放——若没听到，请检查系统音量、输出设备，或标签页是否被静音" }
+    : {
+        type: "err",
+        text: inIframe
+          ? "❌ 音频被预览窗口拦截（浏览器限制），请在独立浏览器窗口中试听"
+          : "❌ 音频未能播放，请检查系统音量与输出设备"
+      }
+  clearTimeout(soundMsgTimer)
+  soundMsgTimer = setTimeout(() => (soundMsg.value = null), 6000)
+}
 
 // 通知状态提示：平时引导，点击「开启通知」后给出明确的成功/失败反馈
 const notifyHint = computed(() => {
@@ -132,6 +150,9 @@ function openStandalone() {
         <input type="checkbox" v-model="state.settings.sound" />
         <span>提示音</span>
       </label>
+      <button v-if="state.settings.sound" class="btn small" @click="testSound">
+        试听
+      </button>
       <button
         v-if="state.settings.notify && notifPerm === 'default'"
         class="btn small"
@@ -141,6 +162,9 @@ function openStandalone() {
         {{ notifAction === "pending" ? "申请中…" : "开启通知" }}
       </button>
     </div>
+    <p v-if="soundMsg" class="perm-hint" :class="soundMsg.type">
+      {{ soundMsg.text }}
+    </p>
     <p v-if="notifyHint" class="perm-hint" :class="notifyHint.cls">
       {{ notifyHint.text }}
       <button

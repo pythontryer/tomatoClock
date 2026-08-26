@@ -43,33 +43,37 @@ export function usePomodoro() {
   })
 
   // ---------- 提示音（WebAudio 生成，无需音频文件） ----------
-  function ensureAudio() {
+  async function ensureAudio() {
     try {
       if (!audioCtx) {
         const Ctx = window.AudioContext || window.webkitAudioContext
-        if (!Ctx) return
+        if (!Ctx) return null
         audioCtx = new Ctx()
       }
-      if (audioCtx.state === "suspended") audioCtx.resume()
+      // resume() 是异步的，必须等它完成再判断状态，否则会误判为未激活而静音放弃
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume()
+      }
     } catch (e) {
       /* 音频不可用时静默降级 */
     }
+    return audioCtx
   }
 
-  function playChime() {
-    if (!state.settings.sound) return
-    ensureAudio()
-    if (!audioCtx || audioCtx.state !== "running") return
+  async function playChime() {
+    if (!state.settings.sound) return false
+    const ctx = await ensureAudio()
+    if (!ctx || ctx.state !== "running") return false
     try {
-      const now = audioCtx.currentTime
+      const now = ctx.currentTime
       // 两个柔和的双音提示
       ;[880, 1174.7].forEach((freq, i) => {
-        const osc = audioCtx.createOscillator()
-        const gain = audioCtx.createGain()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
         osc.type = "sine"
         osc.frequency.value = freq
         osc.connect(gain)
-        gain.connect(audioCtx.destination)
+        gain.connect(ctx.destination)
         const t = now + i * 0.18
         gain.gain.setValueAtTime(0, t)
         gain.gain.linearRampToValueAtTime(0.3, t + 0.02)
@@ -77,9 +81,26 @@ export function usePomodoro() {
         osc.start(t)
         osc.stop(t + 0.45)
       })
+      return true
     } catch (e) {
       /* 播放失败不影响主流程 */
+      return false
     }
+  }
+
+  // 音频解锁：浏览器要求 AudioContext 在用户手势中创建/恢复。
+  // 除「开始」按钮外，任意首次交互（点击/按键）都尝试解锁，成功后移除监听。
+  function unlockAudio() {
+    ensureAudio().then((ctx) => {
+      if (ctx && ctx.state === "running") {
+        window.removeEventListener("pointerdown", unlockAudio)
+        window.removeEventListener("keydown", unlockAudio)
+      }
+    })
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("pointerdown", unlockAudio)
+    window.addEventListener("keydown", unlockAudio)
   }
 
   // ---------- 桌面通知 ----------
@@ -247,6 +268,10 @@ export function usePomodoro() {
   onUnmounted(() => {
     if (timer) clearInterval(timer)
     restoreTitle()
+    if (typeof window !== "undefined") {
+      window.removeEventListener("pointerdown", unlockAudio)
+      window.removeEventListener("keydown", unlockAudio)
+    }
   })
 
   return {
@@ -263,6 +288,7 @@ export function usePomodoro() {
     reset,
     switchMode,
     requestNotify,
-    ensureAudio
+    ensureAudio,
+    playChime
   }
 }
