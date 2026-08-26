@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.build-check/
+*.local
+.DS_Store
+
+# 本地工具记忆，不入库
+.workbuddy/
