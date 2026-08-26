@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from "vue"
 import { usePomodoro } from "../composables/usePomodoro"
 import { useStore } from "../store/useStore"
 
@@ -8,6 +9,8 @@ const {
   display,
   progress,
   notifPerm,
+  notifAction,
+  inIframe,
   start,
   pause,
   reset,
@@ -19,12 +22,35 @@ const { state } = useStore()
 const R = 120
 const C = 2 * Math.PI * R
 
-const permHint = {
-  granted: "",
-  default: "尚未授权，点击「开启通知」授权后番茄结束即可收到桌面提醒",
-  denied: "浏览器已禁用通知，请在地址栏通知图标中重新允许本站",
-  unsupported: "当前浏览器不支持桌面通知"
-}
+// 通知状态提示：平时引导，点击「开启通知」后给出明确的成功/失败反馈
+const notifyHint = computed(() => {
+  if (!state.settings.notify) return null
+  const a = notifAction.value
+  if (a === "pending") {
+    return { cls: "muted", text: "正在向浏览器申请权限，请在地址栏附近弹出的询问框中确认…" }
+  }
+  if (notifPerm.value === "granted") {
+    return { cls: "ok", text: "✅ 桌面通知已开启" }
+  }
+  if (notifPerm.value === "unsupported") {
+    return { cls: "err", text: "当前浏览器不支持桌面通知" }
+  }
+  if (notifPerm.value === "denied") {
+    return inIframe
+      ? { cls: "err", text: "❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请复制当前地址，在独立的浏览器窗口打开后再点「开启通知」" }
+      : { cls: "err", text: "❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」" }
+  }
+  if (a === "error") {
+    return { cls: "err", text: "❌ 权限申请失败：当前环境可能不允许申请通知，请在独立浏览器窗口中打开本页重试" }
+  }
+  if (a === "dismissed") {
+    return { cls: "err", text: "弹窗未做选择，可再次点击「开启通知」" }
+  }
+  // default：还没申请过
+  return inIframe
+    ? { cls: "muted", text: "💡 嵌入预览窗口中浏览器通常会拦截通知权限，建议在独立浏览器窗口中使用" }
+    : { cls: "muted", text: "尚未授权，点击「开启通知」并在弹窗中允许，番茄结束即可收到桌面提醒" }
+})
 </script>
 
 <template>
@@ -84,13 +110,14 @@ const permHint = {
       <button
         v-if="state.settings.notify && notifPerm === 'default'"
         class="btn small"
+        :disabled="notifAction === 'pending'"
         @click="requestNotify"
       >
-        开启通知
+        {{ notifAction === "pending" ? "申请中…" : "开启通知" }}
       </button>
     </div>
-    <p v-if="state.settings.notify && permHint[notifPerm]" class="perm-hint muted">
-      {{ permHint[notifPerm] }}
+    <p v-if="notifyHint" class="perm-hint" :class="notifyHint.cls">
+      {{ notifyHint.text }}
     </p>
 
     <div class="settings">
@@ -227,8 +254,16 @@ const permHint = {
 .perm-hint {
   font-size: 12px;
   margin: 6px 0 0;
-  max-width: 260px;
+  max-width: 280px;
   text-align: center;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.perm-hint.ok {
+  color: var(--good);
+}
+.perm-hint.err {
+  color: var(--warn);
 }
 .settings {
   display: flex;

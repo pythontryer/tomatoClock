@@ -17,6 +17,13 @@ export function usePomodoro() {
     typeof Notification !== "undefined" ? Notification.permission : "unsupported"
   )
 
+  // 权限申请动作的即时状态（用于 UI 反馈）：
+  // null=未操作 | 'pending' | 'granted' | 'denied' | 'dismissed' | 'error' | 'unsupported'
+  const notifAction = ref(null)
+
+  // 是否运行在嵌入 iframe 中（预览面板等场景浏览器会拦截通知权限申请）
+  const inIframe = typeof window !== "undefined" && window.self !== window.top
+
   const totalSeconds = computed(
     () =>
       (mode.value === "focus"
@@ -79,17 +86,38 @@ export function usePomodoro() {
   function requestNotify() {
     if (typeof Notification === "undefined") {
       notifPerm.value = "unsupported"
+      notifAction.value = "unsupported"
       return Promise.resolve("unsupported")
     }
-    return Notification.requestPermission()
-      .then((p) => {
+    notifAction.value = "pending"
+    return new Promise((resolve) => {
+      const settle = (p) => {
         notifPerm.value = p
-        return p
-      })
-      .catch(() => {
+        notifAction.value =
+          p === "granted" ? "granted" : p === "denied" ? "denied" : "dismissed"
+        if (p === "granted") {
+          // 立即发一条测试通知，让用户直观确认通道可用
+          notify("✅ 桌面通知已开启", "番茄结束时会在系统右下角弹窗提醒你")
+        }
+        resolve(p)
+      }
+      try {
+        // 现代浏览器返回 Promise；旧 Safari 只支持回调形式
+        const r = Notification.requestPermission(settle)
+        if (r && typeof r.then === "function") {
+          r.then(settle).catch(() => {
+            notifPerm.value = "denied"
+            notifAction.value = "error"
+            resolve("denied")
+          })
+        }
+      } catch (e) {
+        // 某些嵌入环境（iframe/权限策略）会直接抛错
         notifPerm.value = "denied"
-        return "denied"
-      })
+        notifAction.value = "error"
+        resolve("denied")
+      }
+    })
   }
 
   function notify(title, body) {
@@ -194,6 +222,8 @@ export function usePomodoro() {
     display,
     progress,
     notifPerm,
+    notifAction,
+    inIframe,
     start,
     pause,
     reset,
