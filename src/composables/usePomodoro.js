@@ -24,11 +24,13 @@ export function usePomodoro() {
   // 是否运行在嵌入 iframe 中（预览面板等场景浏览器会拦截通知权限申请）
   const inIframe = typeof window !== "undefined" && window.self !== window.top
 
+  // 兜底：输入框被清空时可能是空串/NaN，回退到默认时长，避免计时会变成 0 分钟卡死
+  const safeFocus = computed(() => Number(state.settings.focusMin) || 25)
+  const safeBreak = computed(() => Number(state.settings.breakMin) || 5)
+
   const totalSeconds = computed(
     () =>
-      (mode.value === "focus"
-        ? state.settings.focusMin
-        : state.settings.breakMin) * 60
+      (mode.value === "focus" ? safeFocus.value : safeBreak.value) * 60
   )
 
   const progress = computed(() => {
@@ -223,7 +225,7 @@ export function usePomodoro() {
   function complete() {
     pause()
     if (mode.value === "focus") {
-      const minutes = state.settings.focusMin
+      const minutes = safeFocus.value
       state.sessions.push({ id: uid(), minutes, ts: Date.now() })
       notify("🍅 专注完成！", `本番茄专注 ${minutes} 分钟，起来休息一下吧~`)
       mode.value = "break"
