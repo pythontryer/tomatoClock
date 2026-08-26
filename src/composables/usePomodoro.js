@@ -148,6 +148,17 @@ export function usePomodoro() {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return
     try {
       const n = new Notification(title, { body, silent: true, tag: "pomodoro" })
+      // 点击通知：把应用窗口/标签页带到前台
+      n.onclick = () => {
+        try {
+          window.focus()
+          // 若运行在 iframe 中（如预览面板），把顶层窗口也带到前台
+          if (window.self !== window.top) window.top.focus()
+        } catch (e) {
+          /* 跨域受限时忽略 */
+        }
+        n.close()
+      }
       setTimeout(() => n.close(), 8000)
     } catch (e) {
       /* 某些环境（如不安全的 iframe）不支持构造 Notification */
