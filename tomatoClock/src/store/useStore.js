@@ -27,6 +27,7 @@ const defaults = {
     autoStart: false, // 一段结束后是否自动开始下一段
     notify: true, // 桌面通知
     sound: true, // 提示音
+    soundType: "chime", // 提示音类型：chime|bell|wood|beep
     dailyFocusTarget: 120, // 每日专注目标（分钟）
     dailyPomoTarget: 8, // 每日番茄目标（个）
     theme: "light" // 'light' | 'dark'

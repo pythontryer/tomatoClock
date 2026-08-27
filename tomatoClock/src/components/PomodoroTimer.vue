@@ -17,7 +17,9 @@ const {
   reset,
   switchMode,
   requestNotify,
-  playChime
+  playChime,
+  previewSound,
+  SOUND_OPTIONS
 } = usePomodoro()
 const { state } = useStore()
 
@@ -43,7 +45,7 @@ const C = 2 * Math.PI * R
 const soundMsg = ref(null)
 let soundMsgTimer = null
 async function testSound() {
-  const ok = await playChime()
+  const ok = await previewSound(state.settings.soundType)
   soundMsg.value = ok
     ? { type: "ok", text: "✅ 提示音已播放——若没听到，请检查系统音量、输出设备，或标签页是否被静音" }
     : {
@@ -175,6 +177,15 @@ function openStandalone() {
         <input type="checkbox" v-model="state.settings.sound" />
         <span>提示音</span>
       </label>
+      <select
+        v-if="state.settings.sound"
+        class="sound-select"
+        v-model="state.settings.soundType"
+      >
+        <option v-for="o in SOUND_OPTIONS" :key="o.value" :value="o.value">
+          {{ o.label }}
+        </option>
+      </select>
       <button v-if="state.settings.sound" class="btn small" @click="testSound">
         试听
       </button>
@@ -398,6 +409,15 @@ function openStandalone() {
 }
 .switch.auto {
   gap: 5px;
+}
+.sound-select {
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  margin-left: -4px;
 }
 .shortcut-hint {
   font-size: 12px;

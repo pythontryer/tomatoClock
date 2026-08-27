@@ -55,6 +55,25 @@ export function usePomodoro() {
   })
 
   // ---------- 提示音（WebAudio 生成，无需音频文件） ----------
+  // 多套提示音可选，全部用振荡器实时合成
+  const SOUND_PROFILES = {
+    chime: { type: "sine", peak: 0.3, notes: [[880, 0, 0.4], [1174.7, 0.18, 0.4]] },
+    bell: {
+      type: "sine",
+      peak: 0.26,
+      notes: [[659.25, 0, 1.3], [1318.5, 0, 1.1], [1978, 0.0, 0.9]]
+    },
+    wood: { type: "triangle", peak: 0.4, notes: [[520, 0, 0.18], [420, 0.16, 0.18]] },
+    beep: { type: "square", peak: 0.16, notes: [[1000, 0, 0.12], [1000, 0.22, 0.12]] }
+  }
+
+  const SOUND_OPTIONS = [
+    { value: "chime", label: "柔和双音" },
+    { value: "bell", label: "钟声" },
+    { value: "wood", label: "木鱼" },
+    { value: "beep", label: "电子 beep" }
+  ]
+
   async function ensureAudio() {
     try {
       if (!audioCtx) {
@@ -72,30 +91,48 @@ export function usePomodoro() {
     return audioCtx
   }
 
+  // 按 profile 在 ctx 上调度音符序列（可指定整体起始偏移，便于连续播放）
+  function scheduleProfile(ctx, profile, startOffset = 0) {
+    const now = ctx.currentTime + startOffset
+    profile.notes.forEach(([freq, offset, dur]) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = profile.type
+      osc.frequency.value = freq
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      const t = now + offset
+      gain.gain.setValueAtTime(0, t)
+      gain.gain.linearRampToValueAtTime(profile.peak, t + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+      osc.start(t)
+      osc.stop(t + dur + 0.05)
+    })
+  }
+
   async function playChime() {
     if (!state.settings.sound) return false
     const ctx = await ensureAudio()
     if (!ctx || ctx.state !== "running") return false
     try {
-      const now = ctx.currentTime
-      // 两个柔和的双音提示
-      ;[880, 1174.7].forEach((freq, i) => {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = "sine"
-        osc.frequency.value = freq
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        const t = now + i * 0.18
-        gain.gain.setValueAtTime(0, t)
-        gain.gain.linearRampToValueAtTime(0.3, t + 0.02)
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4)
-        osc.start(t)
-        osc.stop(t + 0.45)
-      })
+      const profile = SOUND_PROFILES[state.settings.soundType] || SOUND_PROFILES.chime
+      scheduleProfile(ctx, profile)
       return true
     } catch (e) {
       /* 播放失败不影响主流程 */
+      return false
+    }
+  }
+
+  // 设置面板「试听」用：播放指定类型，不受 sound 开关限制
+  async function previewSound(type) {
+    const ctx = await ensureAudio()
+    if (!ctx || ctx.state !== "running") return false
+    try {
+      const profile = SOUND_PROFILES[type] || SOUND_PROFILES.chime
+      scheduleProfile(ctx, profile)
+      return true
+    } catch (e) {
       return false
     }
   }
@@ -339,6 +376,8 @@ export function usePomodoro() {
     switchMode,
     requestNotify,
     ensureAudio,
-    playChime
+    playChime,
+    previewSound,
+    SOUND_OPTIONS
   }
 }
