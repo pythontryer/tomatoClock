@@ -231,6 +231,9 @@ export function usePomodoro() {
       const minutes = safeFocus.value
       state.sessions.push({ id: uid(), minutes, ts: Date.now() })
       state.pomoCycle += 1
+      // 绑定了任务则给该任务 +1 个番茄
+      const t = state.tasks.find((x) => x.id === state.activeTaskId)
+      if (t) t.pomo = (t.pomo || 0) + 1
       // 每完成 longBreakInterval 个番茄后进入长休息，其余为短休息
       const isLong = state.pomoCycle % safeInterval.value === 0
       if (isLong) {

@@ -4,6 +4,7 @@ import PomodoroTimer from "./components/PomodoroTimer.vue"
 import HabitList from "./components/HabitList.vue"
 import StatsPanel from "./components/StatsPanel.vue"
 import DataManager from "./components/DataManager.vue"
+import TaskBoard from "./components/TaskBoard.vue"
 import { useStore } from "./store/useStore"
 
 const { state } = useStore()
@@ -38,6 +39,7 @@ function toggleTheme() {
 
     <main class="grid">
       <PomodoroTimer class="cell timer-cell" />
+      <TaskBoard class="cell" />
       <HabitList class="cell" />
       <StatsPanel class="cell stats-cell" />
       <DataManager class="cell stats-cell" />

@@ -8,6 +8,5 @@ dist/
 .workbuddy/
 
 # 第三方源码（非本项目，勿入库）
-OpenCPN-5.15.0-local-20260417/
-OpenCPN-master/
+OpenCPN*/
 opencpn-master.tar.gz

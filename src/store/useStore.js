@@ -17,6 +17,8 @@ const defaults = {
   habitChecks: {}, // { 'YYYY-MM-DD': { habitId: true } }
   sessions: [], // { id, minutes, ts }
   pomoCycle: 0, // 已完成专注数（用于长休息节奏）
+  tasks: [], // { id, name, done, pomo } 任务列表，pomo=已完成番茄数
+  activeTaskId: null, // 当前绑定到番茄钟的任务 id
   settings: {
     focusMin: 25,
     breakMin: 5,
@@ -39,6 +41,8 @@ const state = reactive({
   habitChecks: base.habitChecks || {},
   sessions: base.sessions || [],
   pomoCycle: base.pomoCycle || 0,
+  tasks: base.tasks || [],
+  activeTaskId: base.activeTaskId || null,
   settings: { ...defaults.settings, ...(base.settings || {}) }
 })
 
