@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#5b6cff"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-dasharray="942" stroke-dashoffset="235"/>
+  <text x="256" y="278" font-size="120" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif">🍅</text>
+</svg>
