@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .vite/
+.npm-cache/
 .build-check/
 *.local
 .DS_Store

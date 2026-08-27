@@ -41,10 +41,12 @@
 
 ## 技术栈
 
-- [Vue 3](https://cn.vuejs.org/)（Composition API + `<script setup>`）
-- [Vite](https://cn.vitejs.dev/)
-- localStorage 持久化（reactive + watch 深度自动保存）
-- **零运行时依赖**：拖拽用原生 HTML5 Drag & Drop，提示音用 WebAudio 合成，图表用 SVG/CSS 手绘，PWA 用原生 Service Worker（无需 workbox 等库）
+- [Vue 3](https://cn.vuejs.org/)（Composition API + `<script setup>` + **TypeScript**）
+- [Vite](https://cn.vitejs.dev/) + `@/` 路径别名
+- [Pinia](https://pinia.vuejs.org/) 状态管理（类型安全 + `$subscribe` 自动持久化）
+- [Vitest](https://vitest.dev/) + [Vue Test Utils](https://test-utils.vuejs.org/) 单元测试
+- [ESLint](https://eslint.org/)（flat config）+ [Prettier](https://prettier.io/) 代码规范
+- 除 Pinia 外**零运行时依赖**：拖拽用原生 HTML5 Drag & Drop，提示音用 WebAudio 合成，图表用 SVG/CSS 手绘，PWA 用原生 Service Worker
 - 部署：构建产物输出到 `docs/`，由 GitHub Pages 托管（已配 `base: './'` 适配子路径）
 
 ## 快速开始
@@ -56,6 +58,11 @@ npm install
 # 启动开发服务器（自动打开浏览器）
 npm run dev
 
+# 类型检查 / 单元测试 / 代码规范
+npm run typecheck
+npm run test
+npm run lint
+
 # 生产构建
 npm run build
 ```
@@ -66,22 +73,38 @@ npm run build
 
 ```
 ├── index.html
-├── vite.config.js
-└── src/
-    ├── main.js               # 入口
-    ├── style.css             # 全局样式 + 主题变量（亮/暗）
-    ├── App.vue               # 仪表盘布局 + 主题切换
-    ├── components/
-    │   ├── PomodoroTimer.vue # 番茄钟：进度环、设置、通知/提示音开关
-    │   ├── HabitList.vue     # 习惯打卡：重命名、拖拽排序、连续天数
-    │   ├── StatsPanel.vue    # 统计：KPI、周/月趋势、目标线
-    │   └── DataManager.vue   # 数据导出/导入（校验+覆盖/合并）
-    ├── composables/
-    │   └── usePomodoro.js    # 计时核心、通知、提示音、标题倒计时
-    ├── store/
-    │   └── useStore.js       # 全局状态 + localStorage 持久化
-    └── utils/
-        └── date.js           # 日期工具
+├── vite.config.ts            # Vite + Vitest + @ 别名配置
+├── tsconfig.json             # 源码类型配置
+├── eslint.config.js          # ESLint flat config
+├── .prettierrc.json
+├── src/
+│   ├── main.ts               # 入口（注册 Pinia + 状态持久化订阅）
+│   ├── style.css             # 全局样式 + 主题变量（亮/暗）
+│   ├── App.vue               # 仪表盘布局 + 主题切换
+│   ├── types/
+│   │   └── models.ts         # 领域类型（Habit/Task/Session/Settings…）
+│   ├── constants/
+│   │   └── index.ts          # 默认设置、色板、提示音 profile
+│   ├── stores/
+│   │   ├── useAppStore.ts    # Pinia 状态 + 领域 actions
+│   │   └── persistence.ts    # localStorage 读写 + 默认值合并
+│   ├── composables/
+│   │   ├── useTimer.ts       # 计时状态机（时间戳锚点）
+│   │   ├── useSound.ts       # WebAudio 提示音
+│   │   └── useNotification.ts# 桌面通知 + 权限申请
+│   ├── components/
+│   │   ├── PomodoroTimer.vue # 番茄钟：进度环 + 模式切换
+│   │   ├── timer/TimerSettings.vue
+│   │   ├── TaskBoard.vue     # 任务：绑定番茄
+│   │   ├── HabitList.vue     # 习惯打卡：拖拽排序、连续天数
+│   │   ├── StatsPanel.vue    # 统计容器
+│   │   ├── stats/            # KPI / 趋势图 / 习惯率 / 任务分布
+│   │   └── DataManager.vue   # 数据导出/导入
+│   └── utils/
+│       ├── date.ts           # 日期工具
+│       ├── id.ts             # id 生成
+│       └── importExport.ts   # 导入校验/清洗
+└── tests/                    # Vitest 单元测试
 ```
 
 ## 数据说明

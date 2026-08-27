@@ -1,47 +1,33 @@
-<script setup>
-import { ref, computed } from "vue"
-import { useStore } from "../store/useStore"
-import { todayKey } from "../utils/date"
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useAppStore } from '@/stores/useAppStore'
+import { HABIT_COLORS } from '@/constants'
+import { todayKey } from '@/utils/date'
+import type { Habit } from '@/types/models'
 
-const { state, uid } = useStore()
+const store = useAppStore()
 
-const name = ref("")
-const palette = ["#5b6cff", "#2bbf8a", "#ffae42", "#ff6b6b", "#9b6bff", "#1fb6d6"]
-const color = ref(palette[0])
-
+const name = ref('')
+const color = ref<string>(HABIT_COLORS[0])
 const today = todayKey()
 
 // 重命名相关
-const editingId = ref(null)
-const editName = ref("")
-const vFocus = { mounted: (el) => el.focus() }
+const editingId = ref<string | null>(null)
+const editName = ref('')
+const vFocus = { mounted: (el: HTMLInputElement) => el.focus() }
 
 function addHabit() {
-  const n = name.value.trim()
-  if (!n) return
-  state.habits.push({ id: uid(), name: n, color: color.value, createdAt: Date.now() })
-  name.value = ""
+  store.addHabit(name.value, color.value)
+  name.value = ''
 }
 
-function removeHabit(id) {
-  state.habits = state.habits.filter((h) => h.id !== id)
-  // 清掉该习惯在所有日期的打卡记录
-  for (const day of Object.keys(state.habitChecks)) {
-    if (state.habitChecks[day]) delete state.habitChecks[day][id]
-  }
-}
-
-function startEdit(h) {
+function startEdit(h: Habit) {
   editingId.value = h.id
   editName.value = h.name
 }
 function saveEdit() {
   if (editingId.value === null) return
-  const h = state.habits.find((x) => x.id === editingId.value)
-  if (h) {
-    const n = editName.value.trim()
-    if (n) h.name = n
-  }
+  store.renameHabit(editingId.value, editName.value)
   editingId.value = null
 }
 function cancelEdit() {
@@ -49,48 +35,41 @@ function cancelEdit() {
 }
 
 // 拖拽排序相关
-const dragId = ref(null)
-const dragOverId = ref(null)
+const dragId = ref<string | null>(null)
+const dragOverId = ref<string | null>(null)
 
-function onDragStart(id, e) {
+function onDragStart(id: string, e: DragEvent) {
   dragId.value = id
-  e.dataTransfer.effectAllowed = "move"
-  e.dataTransfer.setData("text/plain", id) // Firefox 需要
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id) // Firefox 需要
+  }
 }
-function onDrop(targetId) {
+function onDrop(targetId: string) {
   if (!dragId.value || dragId.value === targetId) {
     dragId.value = null
     dragOverId.value = null
     return
   }
-  const from = state.habits.findIndex((h) => h.id === dragId.value)
-  const to = state.habits.findIndex((h) => h.id === targetId)
+  const from = store.habits.findIndex((h) => h.id === dragId.value)
+  const to = store.habits.findIndex((h) => h.id === targetId)
   if (from === -1 || to === -1) return
-  const list = [...state.habits]
-  const [moved] = list.splice(from, 1)
-  list.splice(to, 0, moved)
-  state.habits = list
+  store.reorderHabits(from, to)
   dragId.value = null
   dragOverId.value = null
 }
 
-function isChecked(habitId) {
-  return !!(state.habitChecks[today] && state.habitChecks[today][habitId])
-}
-
-function toggle(habitId) {
-  if (!state.habitChecks[today]) state.habitChecks[today] = {}
-  if (state.habitChecks[today][habitId]) delete state.habitChecks[today][habitId]
-  else state.habitChecks[today][habitId] = true
+function isChecked(habitId: string) {
+  return !!(store.habitChecks[today] && store.habitChecks[today][habitId])
 }
 
 // 计算连续打卡天数：从今天往前数，直到断签
-function streak(habitId) {
+function streak(habitId: string) {
   let count = 0
   const d = new Date()
   while (true) {
     const key = todayKey(d)
-    if (state.habitChecks[key] && state.habitChecks[key][habitId]) {
+    if (store.habitChecks[key] && store.habitChecks[key][habitId]) {
       count++
       d.setDate(d.getDate() - 1)
     } else {
@@ -100,20 +79,18 @@ function streak(habitId) {
   return count
 }
 
-const doneCount = computed(
-  () => state.habits.filter((h) => isChecked(h.id)).length
-)
+const doneCount = computed(() => store.habits.filter((h) => isChecked(h.id)).length)
 </script>
 
 <template>
   <section class="card habits">
-    <h2>✅ 习惯打卡 <span class="muted count">{{ doneCount }}/{{ state.habits.length }}</span></h2>
+    <h2>✅ 习惯打卡 <span class="muted count">{{ doneCount }}/{{ store.habits.length }}</span></h2>
 
     <form class="add" @submit.prevent="addHabit">
       <input v-model="name" placeholder="新增一个习惯，如「读书 30 分钟」" maxlength="40" />
       <div class="colors">
         <button
-          v-for="c in palette"
+          v-for="c in HABIT_COLORS"
           :key="c"
           type="button"
           class="dot"
@@ -125,9 +102,9 @@ const doneCount = computed(
       <button class="btn primary" type="submit">添加</button>
     </form>
 
-    <ul v-if="state.habits.length" class="list">
+    <ul v-if="store.habits.length" class="list">
       <li
-        v-for="h in state.habits"
+        v-for="h in store.habits"
         :key="h.id"
         :draggable="editingId !== h.id"
         :class="{ dragging: dragId === h.id, 'drag-over': dragOverId === h.id }"
@@ -138,15 +115,15 @@ const doneCount = computed(
         @dragend="dragId = null; dragOverId = null"
       >
         <span class="handle" title="拖拽排序">⠿</span>
-        <button class="check" :class="{ on: isChecked(h.id) }" @click="toggle(h.id)">
+        <button class="check" :class="{ on: isChecked(h.id) }" @click="store.toggleHabitCheck(h.id)">
           <span v-if="isChecked(h.id)">✓</span>
         </button>
         <span class="bar" :style="{ background: h.color }" />
         <input
           v-if="editingId === h.id"
-          class="edit-input"
-          v-focus
           v-model="editName"
+          v-focus
+          class="edit-input"
           maxlength="40"
           @keyup.enter="saveEdit"
           @keyup.esc="cancelEdit"
@@ -157,7 +134,7 @@ const doneCount = computed(
           🔥 {{ streak(h.id) }}
         </span>
         <button class="icon-btn" title="重命名" @click="startEdit(h)">✎</button>
-        <button class="del" title="删除" @click="removeHabit(h.id)">×</button>
+        <button class="del" title="删除" @click="store.removeHabit(h.id)">×</button>
       </li>
     </ul>
     <p v-else class="empty muted">还没有习惯，添加第一个开始打卡吧。</p>

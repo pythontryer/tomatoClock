@@ -1,7 +1,32 @@
-<script setup>
-import { computed, ref, onMounted, onUnmounted } from "vue"
-import { usePomodoro } from "../composables/usePomodoro"
-import { useStore } from "../store/useStore"
+<script setup lang="ts">
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useTimer } from '@/composables/useTimer'
+import { useSound } from '@/composables/useSound'
+import { useNotification } from '@/composables/useNotification'
+import { useAppStore } from '@/stores/useAppStore'
+import { SOUND_OPTIONS } from '@/constants'
+import TimerSettings from './timer/TimerSettings.vue'
+
+const store = useAppStore()
+const sound = useSound()
+const notif = useNotification()
+
+const { playChime, previewSound, unlockAudio } = sound
+const { notifPerm, notifAction, inIframe, requestNotify, notify } = notif
+
+// 番茄结束时的副作用：通知 + 提示音
+function onFocusComplete(minutes: number, isLong: boolean) {
+  if (isLong) {
+    notify('🍅 专注完成！', `已完成 ${store.pomoCycle} 个番茄，享受一次长休息吧~`)
+  } else {
+    notify('🍅 专注完成！', `本番茄专注 ${minutes} 分钟，起来休息一下吧~`)
+  }
+  playChime()
+}
+function onBreakComplete() {
+  notify('☕ 休息结束', '休息结束，开始下一个番茄吧！')
+  playChime()
+}
 
 const {
   mode,
@@ -9,108 +34,106 @@ const {
   display,
   progress,
   cycleInfo,
-  notifPerm,
-  notifAction,
-  inIframe,
   start,
   pause,
   reset,
-  switchMode,
-  requestNotify,
-  playChime,
-  previewSound,
-  SOUND_OPTIONS
-} = usePomodoro()
-const { state } = useStore()
+  switchMode
+} = useTimer({ onFocusComplete, onBreakComplete })
+
+// 开始：解锁音频 + 首次申请通知权限
+function handleStart() {
+  unlockAudio()
+  if (store.settings.notify && notifPerm.value === 'default') requestNotify()
+  start()
+}
 
 // 键盘快捷键：空格 开始/暂停，R 重置（输入控件聚焦时不触发）
-function onKey(e) {
-  const tag = (e.target && e.target.tagName ? e.target.tagName : "").toLowerCase()
-  if (tag === "input" || tag === "textarea" || tag === "select") return
+function onKey(e: KeyboardEvent) {
+  const target = e.target as HTMLElement | null
+  const tag = (target && target.tagName ? target.tagName : '').toLowerCase()
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return
   if (e.metaKey || e.ctrlKey || e.altKey) return
-  if (e.code === "Space") {
+  if (e.code === 'Space') {
     e.preventDefault()
-    running.value ? pause() : start()
-  } else if (e.key === "r" || e.key === "R") {
+    if (running.value) pause()
+    else handleStart()
+  } else if (e.key === 'r' || e.key === 'R') {
     reset()
   }
 }
-onMounted(() => window.addEventListener("keydown", onKey))
-onUnmounted(() => window.removeEventListener("keydown", onKey))
+onMounted(() => window.addEventListener('keydown', onKey))
+onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 const R = 120
 const C = 2 * Math.PI * R
 
 // 提示音试听反馈：{ type: 'ok' | 'err', text }
-const soundMsg = ref(null)
-let soundMsgTimer = null
+const soundMsg = ref<{ type: 'ok' | 'err'; text: string } | null>(null)
+let soundMsgTimer: ReturnType<typeof setTimeout> | null = null
 async function testSound() {
-  const ok = await previewSound(state.settings.soundType)
+  const ok = await previewSound(store.settings.soundType)
   soundMsg.value = ok
-    ? { type: "ok", text: "✅ 提示音已播放——若没听到，请检查系统音量、输出设备，或标签页是否被静音" }
+    ? { type: 'ok', text: '✅ 提示音已播放——若没听到，请检查系统音量、输出设备，或标签页是否被静音' }
     : {
-        type: "err",
+        type: 'err',
         text: inIframe
-          ? "❌ 音频被预览窗口拦截（浏览器限制），请在独立浏览器窗口中试听"
-          : "❌ 音频未能播放，请检查系统音量与输出设备"
+          ? '❌ 音频被预览窗口拦截（浏览器限制），请在独立浏览器窗口中试听'
+          : '❌ 音频未能播放，请检查系统音量与输出设备'
       }
-  clearTimeout(soundMsgTimer)
+  if (soundMsgTimer) clearTimeout(soundMsgTimer)
   soundMsgTimer = setTimeout(() => (soundMsg.value = null), 6000)
 }
 
 // 通知状态提示：平时引导，点击「开启通知」后给出明确的成功/失败反馈
 const notifyHint = computed(() => {
-  if (!state.settings.notify) return null
+  if (!store.settings.notify) return null
   const a = notifAction.value
-  if (a === "pending") {
+  if (a === 'pending') {
     return {
-      cls: "muted",
+      cls: 'muted',
       text: inIframe
-        ? "正在申请权限…预览窗口通常会拦截此请求，稍等片刻会给出解决办法"
-        : "正在向浏览器申请权限，请在地址栏附近弹出的询问框中确认…"
+        ? '正在申请权限…预览窗口通常会拦截此请求，稍等片刻会给出解决办法'
+        : '正在向浏览器申请权限，请在地址栏附近弹出的询问框中确认…'
     }
   }
-  if (notifPerm.value === "granted") {
-    return { cls: "ok", text: "✅ 桌面通知已开启" }
+  if (notifPerm.value === 'granted') return { cls: 'ok', text: '✅ 桌面通知已开启' }
+  if (notifPerm.value === 'unsupported') {
+    return { cls: 'err', text: '当前浏览器不支持桌面通知' }
   }
-  if (notifPerm.value === "unsupported") {
-    return { cls: "err", text: "当前浏览器不支持桌面通知" }
-  }
-  if (notifPerm.value === "denied") {
+  if (notifPerm.value === 'denied') {
     return inIframe
-      ? { cls: "err", text: "❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请点击下方按钮在独立浏览器窗口打开后再点「开启通知」" }
-      : { cls: "err", text: "❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」" }
+      ? { cls: 'err', text: '❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请点击下方按钮在独立浏览器窗口打开后再点「开启通知」' }
+      : { cls: 'err', text: '❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」' }
   }
-  if (a === "error") {
-    return { cls: "err", text: "❌ 权限申请失败：当前环境可能不允许申请通知，请在独立浏览器窗口中打开本页重试" }
+  if (a === 'error') {
+    return { cls: 'err', text: '❌ 权限申请失败：当前环境可能不允许申请通知，请在独立浏览器窗口中打开本页重试' }
   }
-  if (a === "timeout") {
+  if (a === 'timeout') {
     return {
-      cls: "err",
+      cls: 'err',
       text: inIframe
-        ? "❌ 申请无响应：预览窗口拦截了通知权限（浏览器不会弹出询问框）。请点击下方按钮在独立窗口打开，再点「开启通知」"
-        : "❌ 申请超时无响应：若没看到询问弹窗，说明环境拦截了申请，请更换 Chrome / Edge 后重试；若弹窗仍在显示，直接选择即可"
+        ? '❌ 申请无响应：预览窗口拦截了通知权限（浏览器不会弹出询问框）。请点击下方按钮在独立窗口打开，再点「开启通知」'
+        : '❌ 申请超时无响应：若没看到询问弹窗，说明环境拦截了申请，请更换 Chrome / Edge 后重试；若弹窗仍在显示，直接选择即可'
     }
   }
-  if (a === "dismissed") {
-    return { cls: "err", text: "弹窗未做选择，可再次点击「开启通知」" }
+  if (a === 'dismissed') {
+    return { cls: 'err', text: '弹窗未做选择，可再次点击「开启通知」' }
   }
-  // default：还没申请过
   return inIframe
-    ? { cls: "muted", text: "💡 嵌入预览窗口中浏览器通常会拦截通知权限，建议在独立浏览器窗口中使用" }
-    : { cls: "muted", text: "尚未授权，点击「开启通知」并在弹窗中允许，番茄结束即可收到桌面提醒" }
+    ? { cls: 'muted', text: '💡 嵌入预览窗口中浏览器通常会拦截通知权限，建议在独立浏览器窗口中使用' }
+    : { cls: 'muted', text: '尚未授权，点击「开启通知」并在弹窗中允许，番茄结束即可收到桌面提醒' }
 })
 
 // 在预览面板中被拦截时，提供一键在独立窗口打开的出口
 const showStandaloneBtn = computed(
   () =>
-    state.settings.notify &&
+    store.settings.notify &&
     inIframe &&
-    (notifPerm.value === "denied" || notifAction.value === "timeout")
+    (notifPerm.value === 'denied' || notifAction.value === 'timeout')
 )
 
 function openStandalone() {
-  window.open(window.location.href, "_blank")
+  window.open(window.location.href, '_blank')
 }
 </script>
 
@@ -119,22 +142,13 @@ function openStandalone() {
     <h2>🍅 番茄钟</h2>
 
     <div class="modes">
-      <button
-        :class="['mode', { active: mode === 'focus' }]"
-        @click="switchMode('focus')"
-      >
+      <button :class="['mode', { active: mode === 'focus' }]" @click="switchMode('focus')">
         专注
       </button>
-      <button
-        :class="['mode', { active: mode === 'break' }]"
-        @click="switchMode('break')"
-      >
+      <button :class="['mode', { active: mode === 'break' }]" @click="switchMode('break')">
         短休
       </button>
-      <button
-        :class="['mode', { active: mode === 'long' }]"
-        @click="switchMode('long')"
-      >
+      <button :class="['mode', { active: mode === 'long' }]" @click="switchMode('long')">
         长休
       </button>
     </div>
@@ -154,7 +168,7 @@ function openStandalone() {
       <div class="ring-center">
         <div class="time">{{ display }}</div>
         <div class="state-label muted">
-          {{ mode === "focus" ? "专注中" : mode === "long" ? "长休息中" : "休息中" }}
+          {{ mode === 'focus' ? '专注中' : mode === 'long' ? '长休息中' : '休息中' }}
         </div>
         <div v-if="mode === 'focus'" class="cycle muted">
           第 {{ cycleInfo.done + 1 }}/{{ cycleInfo.interval }} 个番茄
@@ -163,39 +177,33 @@ function openStandalone() {
     </div>
 
     <div class="controls">
-      <button v-if="!running" class="btn primary" @click="start">开始</button>
+      <button v-if="!running" class="btn primary" @click="handleStart">开始</button>
       <button v-else class="btn" @click="pause">暂停</button>
       <button class="btn ghost" @click="reset">重置</button>
     </div>
 
     <div class="switches">
       <label class="switch">
-        <input type="checkbox" v-model="state.settings.notify" />
+        <input v-model="store.settings.notify" type="checkbox" />
         <span>桌面通知</span>
       </label>
       <label class="switch">
-        <input type="checkbox" v-model="state.settings.sound" />
+        <input v-model="store.settings.sound" type="checkbox" />
         <span>提示音</span>
       </label>
-      <select
-        v-if="state.settings.sound"
-        class="sound-select"
-        v-model="state.settings.soundType"
-      >
+      <select v-if="store.settings.sound" v-model="store.settings.soundType" class="sound-select">
         <option v-for="o in SOUND_OPTIONS" :key="o.value" :value="o.value">
           {{ o.label }}
         </option>
       </select>
-      <button v-if="state.settings.sound" class="btn small" @click="testSound">
-        试听
-      </button>
+      <button v-if="store.settings.sound" class="btn small" @click="testSound">试听</button>
       <button
-        v-if="state.settings.notify && notifPerm === 'default'"
+        v-if="store.settings.notify && notifPerm === 'default'"
         class="btn small"
         :disabled="notifAction === 'pending'"
         @click="requestNotify"
       >
-        {{ notifAction === "pending" ? "申请中…" : "开启通知" }}
+        {{ notifAction === 'pending' ? '申请中…' : '开启通知' }}
       </button>
     </div>
     <p v-if="soundMsg" class="perm-hint" :class="soundMsg.type">
@@ -203,85 +211,13 @@ function openStandalone() {
     </p>
     <p v-if="notifyHint" class="perm-hint" :class="notifyHint.cls">
       {{ notifyHint.text }}
-      <button
-        v-if="showStandaloneBtn"
-        class="btn small standalone"
-        @click="openStandalone"
-      >
+      <button v-if="showStandaloneBtn" class="btn small standalone" @click="openStandalone">
         ↗ 在独立窗口打开
       </button>
     </p>
 
-    <div class="settings">
-      <label>
-        专注时长
-        <input
-          type="number"
-          min="1"
-          max="120"
-          v-model.number="state.settings.focusMin"
-        />
-        分
-      </label>
-      <label>
-        短休时长
-        <input
-          type="number"
-          min="1"
-          max="60"
-          v-model.number="state.settings.breakMin"
-        />
-        分
-      </label>
-    </div>
-    <div class="settings">
-      <label>
-        长休时长
-        <input
-          type="number"
-          min="1"
-          max="60"
-          v-model.number="state.settings.longBreakMin"
-        />
-        分
-      </label>
-      <label>
-        每
-        <input
-          type="number"
-          min="1"
-          max="12"
-          v-model.number="state.settings.longBreakInterval"
-        />
-        个长休
-      </label>
-      <label class="switch auto">
-        <input type="checkbox" v-model="state.settings.autoStart" />
-        <span>自动开始下一段</span>
-      </label>
-    </div>
-    <div class="settings">
-      <label>
-        每日专注目标
-        <input
-          type="number"
-          min="0"
-          max="960"
-          v-model.number="state.settings.dailyFocusTarget"
-        />
-        分
-      </label>
-      <label>
-        每日番茄目标
-        <input
-          type="number"
-          min="0"
-          max="40"
-          v-model.number="state.settings.dailyPomoTarget"
-        />
-        个
-      </label>
-    </div>
+    <TimerSettings />
+
     <p class="shortcut-hint muted">快捷键：空格 开始/暂停 · R 重置</p>
   </section>
 </template>
@@ -391,24 +327,6 @@ function openStandalone() {
 .perm-hint .standalone {
   display: block;
   margin: 8px auto 0;
-}
-.settings {
-  display: flex;
-  gap: 18px;
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--muted);
-}
-.settings input {
-  width: 52px;
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  text-align: center;
-  margin: 0 4px;
-}
-.switch.auto {
-  gap: 5px;
 }
 .sound-select {
   font-size: 12px;

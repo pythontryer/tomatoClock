@@ -1,25 +1,25 @@
-<script setup>
-import { watch } from "vue"
-import PomodoroTimer from "./components/PomodoroTimer.vue"
-import HabitList from "./components/HabitList.vue"
-import StatsPanel from "./components/StatsPanel.vue"
-import DataManager from "./components/DataManager.vue"
-import TaskBoard from "./components/TaskBoard.vue"
-import { useStore } from "./store/useStore"
+<script setup lang="ts">
+import { watch } from 'vue'
+import PomodoroTimer from './components/PomodoroTimer.vue'
+import HabitList from './components/HabitList.vue'
+import StatsPanel from './components/StatsPanel.vue'
+import DataManager from './components/DataManager.vue'
+import TaskBoard from './components/TaskBoard.vue'
+import { useAppStore } from '@/stores/useAppStore'
 
-const { state } = useStore()
+const store = useAppStore()
 
 // 主题应用到根元素；导入旧备份缺 theme 键时回退亮色
 watch(
-  () => state.settings.theme,
+  () => store.settings.theme,
   (t) => {
-    document.documentElement.classList.toggle("dark", t === "dark")
+    document.documentElement.classList.toggle('dark', t === 'dark')
   },
   { immediate: true }
 )
 
 function toggleTheme() {
-  state.settings.theme = state.settings.theme === "dark" ? "light" : "dark"
+  store.settings.theme = store.settings.theme === 'dark' ? 'light' : 'dark'
 }
 </script>
 
@@ -30,10 +30,10 @@ function toggleTheme() {
       <div class="sub muted">本地数据 · 自动保存</div>
       <button
         class="theme-toggle"
-        :title="state.settings.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
+        :title="store.settings.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
         @click="toggleTheme"
       >
-        {{ state.settings.theme === "dark" ? "☀️" : "🌙" }}
+        {{ store.settings.theme === 'dark' ? '☀️' : '🌙' }}
       </button>
     </header>
 

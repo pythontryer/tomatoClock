@@ -1,33 +1,19 @@
-<script setup>
-import { ref, computed } from "vue"
-import { useStore } from "../store/useStore"
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useAppStore } from '@/stores/useAppStore'
 
-const { state, uid } = useStore()
-const text = ref("")
-
-const activeTask = computed(
-  () => state.tasks.find((t) => t.id === state.activeTaskId) || null
-)
+const store = useAppStore()
+const text = ref('')
 
 function addTask() {
   const name = text.value.trim()
   if (!name) return
-  state.tasks.push({ id: uid(), name, done: false, pomo: 0 })
-  text.value = ""
+  store.addTask(name)
+  text.value = ''
 }
 
-function delTask(id) {
-  state.tasks = state.tasks.filter((t) => t.id !== id)
-  if (state.activeTaskId === id) state.activeTaskId = null
-}
-
-// 点击任务行切换绑定到番茄钟（再次点击解绑）
-function toggleBind(id) {
-  state.activeTaskId = state.activeTaskId === id ? null : id
-}
-
-function onKey(e) {
-  if (e.key === "Enter") addTask()
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Enter') addTask()
 }
 </script>
 
@@ -46,30 +32,30 @@ function onKey(e) {
       <button class="btn small" @click="addTask">添加</button>
     </div>
 
-    <p v-if="activeTask" class="active-hint">
-      🎯 计时绑定任务：<b>{{ activeTask.name }}</b>（完成后自动 +1 🍅）
+    <p v-if="store.activeTask" class="active-hint">
+      🎯 计时绑定任务：<b>{{ store.activeTask.name }}</b>（完成后自动 +1 🍅）
     </p>
 
-    <ul v-if="state.tasks.length" class="list">
+    <ul v-if="store.tasks.length" class="list">
       <li
-        v-for="t in state.tasks"
+        v-for="t in store.tasks"
         :key="t.id"
-        :class="{ done: t.done, active: t.id === state.activeTaskId }"
-        @click="toggleBind(t.id)"
+        :class="{ done: t.done, active: t.id === store.activeTaskId }"
+        @click="store.toggleBind(t.id)"
       >
         <label class="row" @click.stop>
-          <input type="checkbox" v-model="t.done" />
+          <input v-model="t.done" type="checkbox" />
         </label>
         <span class="name">{{ t.name }}</span>
         <span class="pomo" :title="`已完成 ${t.pomo} 个番茄`">🍅 {{ t.pomo || 0 }}</span>
         <button
           class="bind"
-          :class="{ on: t.id === state.activeTaskId }"
-          @click.stop="toggleBind(t.id)"
+          :class="{ on: t.id === store.activeTaskId }"
+          @click.stop="store.toggleBind(t.id)"
         >
-          {{ t.id === state.activeTaskId ? "计时中" : "绑定" }}
+          {{ t.id === store.activeTaskId ? '计时中' : '绑定' }}
         </button>
-        <button class="del" @click.stop="delTask(t.id)" title="删除">✕</button>
+        <button class="del" title="删除" @click.stop="store.removeTask(t.id)">✕</button>
       </li>
     </ul>
     <p v-else class="empty muted">还没有任务，添加后点「绑定」即可把番茄计入任务。</p>
