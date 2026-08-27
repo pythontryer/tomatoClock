@@ -32,13 +32,13 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <div class="variance" v-if="rows.length">
+  <div v-if="rows.length" class="variance">
     <div class="title muted">
       任务预估 vs 实际
       <span class="sum">共 {{ summary.count }} 项 · 已达标 {{ summary.onTrack }} 项</span>
     </div>
 
-    <div class="row" v-for="r in rows" :key="r.id">
+    <div v-for="r in rows" :key="r.id" class="row">
       <div class="meta">
         <span class="rname" :title="r.name">{{ r.name }}</span>
         <span class="nums" :class="{ over: r.over }">{{ r.actual }}/{{ r.est }} 🍅</span>

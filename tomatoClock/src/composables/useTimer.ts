@@ -81,7 +81,6 @@ export function useTimer(hooks: TimerHooks) {
   async function acquireWakeLock() {
     if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return
     try {
-      // @ts-ignore - 旧 DOM lib 可能无 wakeLock 类型
       wakeLockSentinel = await navigator.wakeLock.request('screen')
     } catch {
       /* 不支持或被拒绝，静默忽略 */

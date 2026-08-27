@@ -41,7 +41,6 @@ const grid = computed(() => {
 const total = computed(() => {
   let min = 0
   let pomo = 0
-  const seen = new Set<string>()
   for (const s of store.sessions) {
     min += s.minutes
     pomo += 1

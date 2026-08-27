@@ -9,7 +9,7 @@ import { normalizeHabit, normalizeTask, normalizeSession } from '@/utils/normali
  * - 老数据（无 version 字段）正常返回，交给 withDefaults 归一化迁移。
  */
 export function loadState(): Partial<AppState> | null {
-  let raw: string | null = null
+  let raw: string | null
   try {
     raw = localStorage.getItem(STORAGE_KEY)
   } catch {

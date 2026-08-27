@@ -1,4 +1,3 @@
-import { uid } from '@/utils/id'
 import { normalizeHabit, normalizeTask, normalizeSession } from '@/utils/normalize'
 import type { Habit, HabitChecks, Session, Task, Settings } from '@/types/models'
 

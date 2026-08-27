@@ -15,12 +15,12 @@ function fmt(ts: number): string {
 </script>
 
 <template>
-  <div class="sess" v-if="recent.length">
+  <div v-if="recent.length" class="sess">
     <div class="title muted">
       专注复盘 <span class="sub">（最近 {{ recent.length }} 次，可补评）</span>
     </div>
 
-    <div class="item" v-for="s in recent" :key="s.id">
+    <div v-for="s in recent" :key="s.id" class="item">
       <div class="line1">
         <span class="time">{{ fmt(s.ts) }}</span>
         <span class="min">🍅 {{ s.minutes }} 分</span>
