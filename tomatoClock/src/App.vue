@@ -5,9 +5,12 @@ import HabitList from './components/HabitList.vue'
 import StatsPanel from './components/StatsPanel.vue'
 import DataManager from './components/DataManager.vue'
 import TaskBoard from './components/TaskBoard.vue'
+import ToastHost from './components/ToastHost.vue'
 import { useAppStore } from '@/stores/useAppStore'
+import { useHabitReminders } from '@/composables/useHabitReminders'
 
 const store = useAppStore()
+useHabitReminders()
 
 // 主题应用到根元素；导入旧备份缺 theme 键时回退亮色
 watch(
@@ -44,6 +47,8 @@ function toggleTheme() {
       <StatsPanel class="cell stats-cell" />
       <DataManager class="cell stats-cell" />
     </main>
+
+    <ToastHost />
   </div>
 </template>
 

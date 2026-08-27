@@ -14,18 +14,53 @@ const notif = useNotification()
 const { playChime, previewSound, unlockAudio } = sound
 const { notifPerm, notifAction, inIframe, requestNotify, notify } = notif
 
-// 番茄结束时的副作用：通知 + 提示音
-function onFocusComplete(minutes: number, isLong: boolean) {
+// 番茄结束时的副作用：通知 + 提示音 + 打开复盘
+function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
   if (isLong) {
     notify('🍅 专注完成！', `已完成 ${store.pomoCycle} 个番茄，享受一次长休息吧~`)
   } else {
     notify('🍅 专注完成！', `本番茄专注 ${minutes} 分钟，起来休息一下吧~`)
   }
   playChime()
+  openReflection(sessionId)
 }
 function onBreakComplete() {
   notify('☕ 休息结束', '休息结束，开始下一个番茄吧！')
   playChime()
+}
+
+// ---------- 专注意图 + 复盘 ----------
+const intention = ref('')
+const reflectId = ref<string | null>(null)
+const reflectRating = ref(0)
+const reflectNote = ref('')
+const reflectIntention = ref('')
+
+function handleStart() {
+  unlockAudio()
+  if (store.settings.notify && notifPerm.value === 'default') requestNotify()
+  start(intention.value)
+  intention.value = '' // 意图已随会话记录，清空输入避免带到下一轮
+}
+
+function openReflection(sessionId: string) {
+  const s = store.sessions.find((x) => x.id === sessionId)
+  if (!s) return
+  reflectId.value = sessionId
+  reflectRating.value = s.rating || 0
+  reflectNote.value = s.note || ''
+  reflectIntention.value = s.intention || ''
+}
+function setRating(n: number) {
+  reflectRating.value = n
+}
+function saveReflection() {
+  if (!reflectId.value) return
+  store.reflect(reflectId.value, reflectRating.value, reflectNote.value)
+  reflectId.value = null
+}
+function skipReflection() {
+  reflectId.value = null
 }
 
 const {
@@ -39,13 +74,6 @@ const {
   reset,
   switchMode
 } = useTimer({ onFocusComplete, onBreakComplete })
-
-// 开始：解锁音频 + 首次申请通知权限
-function handleStart() {
-  unlockAudio()
-  if (store.settings.notify && notifPerm.value === 'default') requestNotify()
-  start()
-}
 
 // 键盘快捷键：空格 开始/暂停，R 重置（输入控件聚焦时不触发）
 function onKey(e: KeyboardEvent) {
@@ -153,8 +181,17 @@ function openStandalone() {
       </button>
     </div>
 
-    <div class="ring-wrap">
-      <svg class="ring" viewBox="0 0 280 280">
+    <div v-if="mode === 'focus' && !running" class="intention">
+      <input
+        v-model="intention"
+        type="text"
+        placeholder="本次专注意图（可选），如「写完引言」"
+        maxlength="60"
+        @keyup.enter="handleStart"
+      />
+    </div>
+
+    <div class="ring-wrap">      <svg class="ring" viewBox="0 0 280 280">
         <circle class="ring-bg" cx="140" cy="140" :r="R" />
         <circle
           class="ring-fg"
@@ -180,6 +217,32 @@ function openStandalone() {
       <button v-if="!running" class="btn primary" @click="handleStart">开始</button>
       <button v-else class="btn" @click="pause">暂停</button>
       <button class="btn ghost" @click="reset">重置</button>
+    </div>
+
+    <div v-if="reflectId" class="reflect">
+      <div class="reflect-title">📝 复盘这一番茄</div>
+      <p v-if="reflectIntention" class="reflect-intent">意图：{{ reflectIntention }}</p>
+      <div class="stars">
+        <button
+          v-for="n in 5"
+          :key="n"
+          type="button"
+          class="star"
+          :class="{ on: n <= reflectRating }"
+          @click="setRating(n)"
+        >★</button>
+        <span class="muted">{{ reflectRating ? reflectRating + ' 分' : '未评分' }}</span>
+      </div>
+      <textarea
+        v-model="reflectNote"
+        class="reflect-note"
+        placeholder="记录这次专注的感受、卡点、下一步…"
+        maxlength="300"
+      />
+      <div class="reflect-actions">
+        <button class="btn primary sm" @click="saveReflection">保存</button>
+        <button class="btn ghost sm" @click="skipReflection">跳过</button>
+      </div>
     </div>
 
     <div class="switches">
@@ -340,5 +403,73 @@ function openStandalone() {
 .shortcut-hint {
   font-size: 12px;
   margin: 12px 0 0;
+}
+.intention {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.intention input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: center;
+}
+.reflect {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  text-align: left;
+}
+.reflect-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.reflect-intent {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.star {
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: var(--border);
+  cursor: pointer;
+  padding: 0 2px;
+}
+.star.on {
+  color: #f5a623;
+}
+.reflect-note {
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.reflect-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn.sm {
+  padding: 3px 10px;
+  font-size: 12px;
 }
 </style>

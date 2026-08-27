@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { todayKey } from '@/utils/date'
+import { isDueToday } from '@/utils/habit'
 
 const store = useAppStore()
 const today = todayKey()
@@ -17,11 +18,12 @@ const todayPomodoros = computed(
 )
 
 const todayHabitRate = computed(() => {
-  if (!store.habits.length) return 0
-  const done = store.habits.filter(
+  const due = store.habits.filter((h) => isDueToday(h))
+  if (!due.length) return 0
+  const done = due.filter(
     (h) => store.habitChecks[today] && store.habitChecks[today][h.id]
   ).length
-  return Math.round((done / store.habits.length) * 100)
+  return Math.round((done / due.length) * 100)
 })
 </script>
 

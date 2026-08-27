@@ -1,4 +1,5 @@
 {
+  "id": "focus-habit-panel",
   "name": "专注与习惯面板",
   "short_name": "番茄面板",
   "description": "本地优先的番茄钟 + 习惯打卡 + 数据可视化工具",
@@ -6,8 +7,11 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
   "background_color": "#f4f6fb",
   "theme_color": "#5b6cff",
+  "categories": ["productivity", "health"],
   "icons": [
     {
       "src": "./icon.svg",

@@ -61,6 +61,56 @@ describe('app store', () => {
     expect(store.activeTaskId).toBeNull()
   })
 
+  it('addTask 支持预估番茄数，缺省为 0', () => {
+    const store = useAppStore()
+    store.addTask('文章', 4)
+    expect(store.tasks[0].estimate).toBe(4)
+    store.addTask('无预估')
+    expect(store.tasks[1].estimate).toBe(0)
+  })
+
+  it('setTaskEstimate 修改预估并向下取整到 >=0', () => {
+    const store = useAppStore()
+    store.addTask('文章', 4)
+    const id = store.tasks[0].id
+    store.setTaskEstimate(id, 8)
+    expect(store.tasks[0].estimate).toBe(8)
+    store.setTaskEstimate(id, -3)
+    expect(store.tasks[0].estimate).toBe(0)
+  })
+
+  it('recordFocus 返回 id、记录意图、推进节奏', () => {
+    const store = useAppStore()
+    const id = store.recordFocus(25, '写文档')
+    expect(store.sessions).toHaveLength(1)
+    expect(id).toBeTruthy()
+    expect(store.sessions[0].id).toBe(id)
+    expect(store.sessions[0].intention).toBe('写文档')
+    expect(store.sessions[0].rating).toBe(0)
+    expect(store.pomoCycle).toBe(1)
+  })
+
+  it('reflect 更新评分与备注，并夹紧到 0..5', () => {
+    const store = useAppStore()
+    const id = store.recordFocus(25, '写文档')
+    store.reflect(id, 6, '很专注')
+    expect(store.sessions[0].rating).toBe(5)
+    expect(store.sessions[0].note).toBe('很专注')
+    store.reflect(id, -2, '一般般')
+    expect(store.sessions[0].rating).toBe(0)
+    expect(store.sessions[0].note).toBe('一般般')
+  })
+
+  it('setHabitRemind 仅接受 HH:mm 格式，否则清空', () => {
+    const store = useAppStore()
+    store.addHabit('早起')
+    const id = store.habits[0].id
+    store.setHabitRemind(id, '08:30')
+    expect(store.habits[0].remindAt).toBe('08:30')
+    store.setHabitRemind(id, '错误的格式')
+    expect(store.habits[0].remindAt).toBeNull()
+  })
+
   it('recordFocus 记录会话、推进节奏、给绑定任务 +1 🍅', () => {
     const store = useAppStore()
     store.addTask('任务')

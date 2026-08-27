@@ -2,18 +2,19 @@
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { lastNDays, weekdayLabel } from '@/utils/date'
+import { isDueOnKey } from '@/utils/habit'
 
 const store = useAppStore()
 
-// 近 7 天习惯完成率（固定周视图）
+// 近 7 天习惯完成率（固定周视图），仅按「当日应打卡」的习惯计算
 const weekHabit = computed(() =>
   lastNDays(7).map((day) => {
-    const total = store.habits.length
-    if (!total) return { day, rate: 0 }
-    const done = store.habits.filter(
+    const due = store.habits.filter((h) => isDueOnKey(h, day))
+    if (!due.length) return { day, rate: null as number | null }
+    const done = due.filter(
       (h) => store.habitChecks[day] && store.habitChecks[day][h.id]
     ).length
-    return { day, rate: Math.round((done / total) * 100) }
+    return { day, rate: Math.round((done / due.length) * 100) }
   })
 )
 </script>
@@ -24,9 +25,9 @@ const weekHabit = computed(() =>
     <div class="bars">
       <div v-for="d in weekHabit" :key="d.day" class="bar-col">
         <div class="bar-track">
-          <div class="bar-fill habit" :style="{ height: d.rate + '%' }" />
+          <div class="bar-fill habit" :style="{ height: (d.rate ?? 0) + '%' }" />
         </div>
-        <div class="bar-val">{{ d.rate ? d.rate + '%' : '' }}</div>
+        <div class="bar-val">{{ d.rate == null ? '' : d.rate + '%' }}</div>
         <div class="bar-day">{{ weekdayLabel(d.day) }}</div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import type { TimerMode } from '@/types/models'
 import { computeRemainingSeconds, isLongBreakDue, cycleInfo } from './timerLogic'
 
 export interface TimerHooks {
-  onFocusComplete: (minutes: number, isLong: boolean) => void
+  onFocusComplete: (minutes: number, isLong: boolean, sessionId: string) => void
   onBreakComplete: () => void
 }
 
@@ -23,6 +23,10 @@ export function useTimer(hooks: TimerHooks) {
 
   let timer: ReturnType<typeof setInterval> | null = null
   let endAt = 0
+  // 本次专注的意图（开始专注时写入，完成时随会话记录）
+  let currentIntention = ''
+  // 屏幕常亮锁（专注期间防止息屏）；不支持的浏览器静默降级
+  let wakeLockSentinel: { release: () => Promise<void> } | null = null
 
   // 兜底：输入框被清空时可能是空串/NaN，回退到默认时长，避免计时变成 0 分钟卡死
   const safeFocus = computed(() => Number(store.settings.focusMin) || 25)
@@ -53,12 +57,15 @@ export function useTimer(hooks: TimerHooks) {
     if (remaining.value <= 0) complete()
   }
 
-  function start() {
+  function start(intention?: string) {
     if (running.value) return
+    currentIntention = typeof intention === 'string' ? intention.trim() : ''
     running.value = true
     endAt = Date.now() + remaining.value * 1000
     // 250ms 刷新一次足够平滑；核心精度来自 Date.now()，与刷新频率无关
     timer = setInterval(loop, 250)
+    // 专注期间锁定屏幕常亮，离开页面再回来时也会重新申请
+    if (mode.value === 'focus') acquireWakeLock()
   }
 
   function pause() {
@@ -67,6 +74,33 @@ export function useTimer(hooks: TimerHooks) {
     timer = null
     // 暂停瞬间按真实时间结算剩余，避免整数秒累加误差
     remaining.value = computeRemainingSeconds(endAt, Date.now())
+    releaseWakeLock()
+  }
+
+  // ---------- 屏幕常亮（Wake Lock） ----------
+  async function acquireWakeLock() {
+    if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return
+    try {
+      // @ts-ignore - 旧 DOM lib 可能无 wakeLock 类型
+      wakeLockSentinel = await navigator.wakeLock.request('screen')
+    } catch {
+      /* 不支持或被拒绝，静默忽略 */
+    }
+  }
+  function releaseWakeLock() {
+    if (wakeLockSentinel) {
+      try {
+        wakeLockSentinel.release()
+      } catch {
+        /* ignore */
+      }
+      wakeLockSentinel = null
+    }
+  }
+  function onVisibilityChange() {
+    if (typeof document === 'undefined') return
+    if (document.visibilityState === 'hidden') releaseWakeLock()
+    else if (running.value && mode.value === 'focus') acquireWakeLock()
   }
 
   function reset() {
@@ -86,11 +120,12 @@ export function useTimer(hooks: TimerHooks) {
     pause()
     if (mode.value === 'focus') {
       const minutes = safeFocus.value
-      store.recordFocus(minutes)
+      const sessionId = store.recordFocus(minutes, currentIntention)
       // 每完成 longBreakInterval 个番茄后进入长休息，其余为短休息
       const isLong = isLongBreakDue(store.pomoCycle, safeInterval.value)
       mode.value = isLong ? 'long' : 'break'
-      hooks.onFocusComplete(minutes, isLong)
+      hooks.onFocusComplete(minutes, isLong, sessionId)
+      currentIntention = ''
     } else {
       mode.value = 'focus'
       hooks.onBreakComplete()
@@ -144,8 +179,16 @@ export function useTimer(hooks: TimerHooks) {
 
   onUnmounted(() => {
     if (timer) clearInterval(timer)
+    releaseWakeLock()
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
     restoreTitle()
   })
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange)
+  }
 
   return {
     mode,

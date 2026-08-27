@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { loadState, withDefaults } from './persistence'
 import { uid } from '@/utils/id'
 import { todayKey } from '@/utils/date'
-import type { AppState, Task } from '@/types/models'
+import type { AppState, Task, HabitFreq } from '@/types/models'
 import type { SanitizedData } from '@/utils/importExport'
 
 export const useAppStore = defineStore('app', {
@@ -17,10 +17,37 @@ export const useAppStore = defineStore('app', {
 
   actions: {
     // ---------- 习惯 ----------
-    addHabit(name: string, color: string) {
+    addHabit(
+      name: string,
+      color: string,
+      freq: HabitFreq = 'daily',
+      freqDays: number[] = []
+    ) {
       const n = name.trim()
       if (!n) return
-      this.habits.push({ id: uid(), name: n, color, createdAt: Date.now() })
+      this.habits.push({
+        id: uid(),
+        name: n,
+        color,
+        createdAt: Date.now(),
+        freq,
+        freqDays: freq === 'daily' ? [] : freqDays
+      })
+    },
+
+    /** 修改习惯的打卡频率配置 */
+    setHabitFreq(id: string, freq: HabitFreq, freqDays: number[] = []) {
+      const h = this.habits.find((x) => x.id === id)
+      if (!h) return
+      h.freq = freq
+      h.freqDays = freq === 'daily' ? [] : freqDays
+    },
+
+    /** 设置习惯的每日提醒时间（HH:mm，null=不提醒） */
+    setHabitRemind(id: string, remindAt: string | null) {
+      const h = this.habits.find((x) => x.id === id)
+      if (!h) return
+      h.remindAt = typeof remindAt === 'string' && /^\d{1,2}:\d{2}$/.test(remindAt) ? remindAt : null
     },
 
     removeHabit(id: string) {
@@ -51,10 +78,16 @@ export const useAppStore = defineStore('app', {
     },
 
     // ---------- 任务 ----------
-    addTask(name: string) {
+    addTask(name: string, estimate: number = 0) {
       const n = name.trim()
       if (!n) return
-      this.tasks.push({ id: uid(), name: n, done: false, pomo: 0 })
+      this.tasks.push({ id: uid(), name: n, done: false, pomo: 0, estimate })
+    },
+
+    /** 设置任务的预估番茄数（0=未预估） */
+    setTaskEstimate(id: string, estimate: number) {
+      const t = this.tasks.find((x) => x.id === id)
+      if (t) t.estimate = Math.max(0, Math.floor(estimate))
     },
 
     removeTask(id: string) {
@@ -73,12 +106,29 @@ export const useAppStore = defineStore('app', {
       this.sessions.push({ id: uid(), minutes, ts: Date.now() })
     },
 
-    /** 完成一个专注番茄：记录会话、推进长休息节奏、给绑定任务 +1 🍅 */
-    recordFocus(minutes: number) {
-      this.sessions.push({ id: uid(), minutes, ts: Date.now() })
+    /** 完成一个专注番茄：记录会话、推进长休息节奏、给绑定任务 +1 🍅 ；返回新建会话 id 以便复盘 */
+    recordFocus(minutes: number, intention?: string): string {
+      const id = uid()
+      this.sessions.push({
+        id,
+        minutes,
+        ts: Date.now(),
+        intention: typeof intention === 'string' ? intention.trim() : '',
+        rating: 0,
+        note: ''
+      })
       this.pomoCycle += 1
       const t = this.tasks.find((x) => x.id === this.activeTaskId)
       if (t) t.pomo += 1
+      return id
+    },
+
+    /** 给某次专注补写复盘：质量评分 1-5（0=未评）与备注 */
+    reflect(sessionId: string, rating: number, note: string) {
+      const s = this.sessions.find((x) => x.id === sessionId)
+      if (!s) return
+      s.rating = Math.max(0, Math.min(5, Math.round(rating || 0)))
+      s.note = typeof note === 'string' ? note : ''
     },
 
     // ---------- 导入 ----------
