@@ -16,9 +16,13 @@ const defaults = {
   habits: [], // { id, name, color, createdAt }
   habitChecks: {}, // { 'YYYY-MM-DD': { habitId: true } }
   sessions: [], // { id, minutes, ts }
+  pomoCycle: 0, // 已完成专注数（用于长休息节奏）
   settings: {
     focusMin: 25,
     breakMin: 5,
+    longBreakMin: 15, // 长休息时长
+    longBreakInterval: 4, // 每完成 N 个番茄后进入长休息
+    autoStart: false, // 一段结束后是否自动开始下一段
     notify: true, // 桌面通知
     sound: true, // 提示音
     dailyFocusTarget: 120, // 每日专注目标（分钟）
@@ -34,6 +38,7 @@ const state = reactive({
   habits: base.habits || [],
   habitChecks: base.habitChecks || {},
   sessions: base.sessions || [],
+  pomoCycle: base.pomoCycle || 0,
   settings: { ...defaults.settings, ...(base.settings || {}) }
 })
 

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue"
+import { computed, ref, onMounted, onUnmounted } from "vue"
 import { usePomodoro } from "../composables/usePomodoro"
 import { useStore } from "../store/useStore"
 
@@ -8,6 +8,7 @@ const {
   running,
   display,
   progress,
+  cycleInfo,
   notifPerm,
   notifAction,
   inIframe,
@@ -19,6 +20,21 @@ const {
   playChime
 } = usePomodoro()
 const { state } = useStore()
+
+// 键盘快捷键：空格 开始/暂停，R 重置（输入控件聚焦时不触发）
+function onKey(e) {
+  const tag = (e.target && e.target.tagName ? e.target.tagName : "").toLowerCase()
+  if (tag === "input" || tag === "textarea" || tag === "select") return
+  if (e.metaKey || e.ctrlKey || e.altKey) return
+  if (e.code === "Space") {
+    e.preventDefault()
+    running.value ? pause() : start()
+  } else if (e.key === "r" || e.key === "R") {
+    reset()
+  }
+}
+onMounted(() => window.addEventListener("keydown", onKey))
+onUnmounted(() => window.removeEventListener("keydown", onKey))
 
 const R = 120
 const C = 2 * Math.PI * R
@@ -111,7 +127,13 @@ function openStandalone() {
         :class="['mode', { active: mode === 'break' }]"
         @click="switchMode('break')"
       >
-        休息
+        短休
+      </button>
+      <button
+        :class="['mode', { active: mode === 'long' }]"
+        @click="switchMode('long')"
+      >
+        长休
       </button>
     </div>
 
@@ -130,7 +152,10 @@ function openStandalone() {
       <div class="ring-center">
         <div class="time">{{ display }}</div>
         <div class="state-label muted">
-          {{ mode === "focus" ? "专注中" : "休息中" }}
+          {{ mode === "focus" ? "专注中" : mode === "long" ? "长休息中" : "休息中" }}
+        </div>
+        <div v-if="mode === 'focus'" class="cycle muted">
+          第 {{ cycleInfo.done + 1 }}/{{ cycleInfo.interval }} 个番茄
         </div>
       </div>
     </div>
@@ -188,7 +213,7 @@ function openStandalone() {
         分
       </label>
       <label>
-        休息时长
+        短休时长
         <input
           type="number"
           min="1"
@@ -196,6 +221,32 @@ function openStandalone() {
           v-model.number="state.settings.breakMin"
         />
         分
+      </label>
+    </div>
+    <div class="settings">
+      <label>
+        长休时长
+        <input
+          type="number"
+          min="1"
+          max="60"
+          v-model.number="state.settings.longBreakMin"
+        />
+        分
+      </label>
+      <label>
+        每
+        <input
+          type="number"
+          min="1"
+          max="12"
+          v-model.number="state.settings.longBreakInterval"
+        />
+        个长休
+      </label>
+      <label class="switch auto">
+        <input type="checkbox" v-model="state.settings.autoStart" />
+        <span>自动开始下一段</span>
       </label>
     </div>
     <div class="settings">
@@ -220,6 +271,7 @@ function openStandalone() {
         个
       </label>
     </div>
+    <p class="shortcut-hint muted">快捷键：空格 开始/暂停 · R 重置</p>
   </section>
 </template>
 
@@ -284,6 +336,10 @@ function openStandalone() {
   font-size: 13px;
   margin-top: 4px;
 }
+.cycle {
+  font-size: 12px;
+  margin-top: 2px;
+}
 .controls {
   display: flex;
   gap: 10px;
@@ -339,5 +395,12 @@ function openStandalone() {
   border-radius: 8px;
   text-align: center;
   margin: 0 4px;
+}
+.switch.auto {
+  gap: 5px;
+}
+.shortcut-hint {
+  font-size: 12px;
+  margin: 12px 0 0;
 }
 </style>

@@ -7,7 +7,7 @@ let audioCtx = null
 export function usePomodoro() {
   const { state, uid } = useStore()
 
-  const mode = ref("focus") // 'focus' | 'break'
+  const mode = ref("focus") // 'focus' | 'break' | 'long'(长休息)
   const running = ref(false)
   const remaining = ref(state.settings.focusMin * 60)
   let timer = null
@@ -27,11 +27,14 @@ export function usePomodoro() {
   // 兜底：输入框被清空时可能是空串/NaN，回退到默认时长，避免计时会变成 0 分钟卡死
   const safeFocus = computed(() => Number(state.settings.focusMin) || 25)
   const safeBreak = computed(() => Number(state.settings.breakMin) || 5)
+  const safeLong = computed(() => Number(state.settings.longBreakMin) || 15)
+  const safeInterval = computed(() => Number(state.settings.longBreakInterval) || 4)
 
-  const totalSeconds = computed(
-    () =>
-      (mode.value === "focus" ? safeFocus.value : safeBreak.value) * 60
-  )
+  const totalSeconds = computed(() => {
+    if (mode.value === "focus") return safeFocus.value * 60
+    if (mode.value === "long") return safeLong.value * 60
+    return safeBreak.value * 60
+  })
 
   const progress = computed(() => {
     const t = totalSeconds.value
@@ -227,19 +230,42 @@ export function usePomodoro() {
     if (mode.value === "focus") {
       const minutes = safeFocus.value
       state.sessions.push({ id: uid(), minutes, ts: Date.now() })
-      notify("🍅 专注完成！", `本番茄专注 ${minutes} 分钟，起来休息一下吧~`)
-      mode.value = "break"
+      state.pomoCycle += 1
+      // 每完成 longBreakInterval 个番茄后进入长休息，其余为短休息
+      const isLong = state.pomoCycle % safeInterval.value === 0
+      if (isLong) {
+        notify("🍅 专注完成！", `已完成 ${state.pomoCycle} 个番茄，享受一次长休息吧~`)
+        mode.value = "long"
+      } else {
+        notify("🍅 专注完成！", `本番茄专注 ${minutes} 分钟，起来休息一下吧~`)
+        mode.value = "break"
+      }
     } else {
       notify("☕ 休息结束", "休息结束，开始下一个番茄吧！")
       mode.value = "focus"
     }
     playChime()
     remaining.value = totalSeconds.value
+    // 自动开始下一段（默认关闭，避免在不经意间连续计时）
+    if (state.settings.autoStart) start()
   }
+
+  // 距下次长休息还差几个番茄（用于 UI 提示，如「第 2/4 个」）
+  const cycleInfo = computed(() => {
+    const interval = safeInterval.value
+    const done = state.pomoCycle % interval
+    const nextLongAt = done === 0 ? interval : interval - done
+    return { interval, done, nextLongAt }
+  })
 
   // 设置变更时（且未在计时）同步刷新剩余时间
   watch(
-    () => [state.settings.focusMin, state.settings.breakMin, mode.value],
+    () => [
+      state.settings.focusMin,
+      state.settings.breakMin,
+      state.settings.longBreakMin,
+      mode.value
+    ],
     () => {
       if (!running.value) remaining.value = totalSeconds.value
     }
@@ -257,7 +283,8 @@ export function usePomodoro() {
       return
     }
     const icon = mode.value === "focus" ? "🍅" : "☕"
-    const label = mode.value === "focus" ? "专注中" : "休息中"
+    const label =
+      mode.value === "focus" ? "专注中" : mode.value === "long" ? "长休息中" : "休息中"
     document.title = running.value
       ? `${icon} ${display.value} ${label}`
       : `${icon} ${display.value} 已暂停`
@@ -282,6 +309,7 @@ export function usePomodoro() {
     remaining,
     display,
     progress,
+    cycleInfo,
     notifPerm,
     notifAction,
     inIframe,
