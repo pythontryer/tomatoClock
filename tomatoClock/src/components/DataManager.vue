@@ -3,7 +3,7 @@ import { ref } from "vue"
 import { useStore } from "../store/useStore"
 import { todayKey } from "../utils/date"
 
-const { state } = useStore()
+const { state, uid } = useStore()
 
 const fileInput = ref(null)
 // 待确认的导入数据（已通过校验）
@@ -44,61 +44,129 @@ function onFileChange(e) {
   if (!file) return
   fileName.value = file.name
   const reader = new FileReader()
-  reader.onload = () => {
-    try {
-      const data = JSON.parse(reader.result)
-      const err = validate(data)
-      if (err) {
-        msg.value = { type: "err", text: `文件格式不正确：${err}` }
-        pending.value = null
-      } else {
-        const n = data.habits.length
-        const s = data.sessions.length
-        pending.value = data
-        msg.value = {
-          type: "ok",
-          text: `「${file.name}」校验通过：${n} 个习惯 / ${s} 条专注记录。请选择导入方式`
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result)
+        const res = sanitize(data)
+        if (res.error) {
+          msg.value = { type: "err", text: `文件格式不正确：${res.error}` }
+          pending.value = null
+        } else {
+          const { data: clean, skipped, present } = res
+          pending.value = clean
+          const parts = []
+          parts.push(`${clean.habits.length} 个习惯`)
+          parts.push(`${clean.sessions.length} 条专注`)
+          if (present.tasks) parts.push(`${clean.tasks.length} 个任务`)
+          let text = `「${file.name}」校验通过：${parts.join(" / ")}。`
+          const totalSkip = skipped.habits + skipped.sessions + skipped.tasks
+          if (totalSkip > 0) {
+            text += `已跳过 ${totalSkip} 条异常记录（缺字段或数值非法）。`
+          }
+          text += "请选择导入方式"
+          msg.value = { type: "ok", text }
         }
+      } catch (err) {
+        msg.value = { type: "err", text: "文件不是有效的 JSON：" + err.message }
       }
-    } catch (err) {
-      msg.value = { type: "err", text: "文件不是有效的 JSON：" + err.message }
+      e.target.value = "" // 允许重复选择同一文件
     }
-    e.target.value = "" // 允许重复选择同一文件
-  }
   reader.onerror = () => {
     msg.value = { type: "err", text: "文件读取失败，请重试" }
   }
   reader.readAsText(file)
 }
 
-// 结构校验：返回错误描述，通过则返回 null
-function validate(data) {
+// 字段级校验 + 清洗：剔除非法条目、补齐缺省，返回干净数据或错误描述。
+// 这样导入「大体可用但有少量坏数据」的备份时，不会整文件失败（冲突合并的字段级处理）。
+function sanitize(data) {
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
-    return "根节点必须是 JSON 对象"
+    return { error: "根节点必须是 JSON 对象" }
   }
-  if (!Array.isArray(data.habits)) return "缺少 habits 数组"
+  const skipped = { habits: 0, sessions: 0, tasks: 0 }
+
+  if (!Array.isArray(data.habits)) return { error: "缺少 habits 数组" }
+  const habits = []
   for (const h of data.habits) {
-    if (typeof h !== "object" || h === null) return "habits 中存在无效条目"
-    if (typeof h.id === "undefined") return "habits 条目缺少 id"
-    if (typeof h.name !== "string") return "habits 条目缺少 name"
+    if (!h || typeof h !== "object") { skipped.habits++; continue }
+    if (typeof h.id !== "string") { skipped.habits++; continue }
+    if (typeof h.name !== "string" || !h.name.trim()) { skipped.habits++; continue }
+    habits.push({
+      id: h.id,
+      name: h.name.trim(),
+      color: typeof h.color === "string" ? h.color : "#5b6cff",
+      createdAt: typeof h.createdAt === "number" ? h.createdAt : Date.now()
+    })
   }
-  if (!Array.isArray(data.sessions)) return "缺少 sessions 数组"
+
+  if (!Array.isArray(data.sessions)) return { error: "缺少 sessions 数组" }
+  const sessions = []
   for (const s of data.sessions) {
-    if (typeof s !== "object" || s === null) return "sessions 中存在无效条目"
-    if (typeof s.ts !== "number") return "sessions 条目缺少 ts"
-    if (typeof s.minutes !== "number") return "sessions 条目缺少 minutes"
+    if (!s || typeof s !== "object") { skipped.sessions++; continue }
+    if (typeof s.ts !== "number" || !isFinite(s.ts) || s.ts <= 0) { skipped.sessions++; continue }
+    if (
+      typeof s.minutes !== "number" ||
+      !isFinite(s.minutes) ||
+      s.minutes <= 0 ||
+      s.minutes > 1440
+    ) {
+      skipped.sessions++; continue
+    }
+    sessions.push({
+      id: typeof s.id === "string" ? s.id : uid(),
+      minutes: s.minutes,
+      ts: s.ts
+    })
   }
+
   if (
     typeof data.habitChecks !== "object" ||
     data.habitChecks === null ||
     Array.isArray(data.habitChecks)
   ) {
-    return "缺少 habitChecks 对象"
+    return { error: "缺少 habitChecks 对象" }
   }
-  if (data.settings !== undefined && typeof data.settings !== "object") {
-    return "settings 必须是对象"
+  const habitChecks = {}
+  for (const day of Object.keys(data.habitChecks)) {
+    const v = data.habitChecks[day]
+    if (v && typeof v === "object" && !Array.isArray(v)) habitChecks[day] = v
   }
-  return null
+
+  // tasks / pomoCycle / activeTaskId 是后加的字段，老备份可能没有，需记录是否存在
+  const present = {
+    tasks: Array.isArray(data.tasks),
+    pomoCycle: "pomoCycle" in data,
+    activeTaskId: "activeTaskId" in data
+  }
+  const tasks = []
+  if (present.tasks) {
+    for (const t of data.tasks) {
+      if (!t || typeof t !== "object") { skipped.tasks++; continue }
+      if (typeof t.id !== "string") { skipped.tasks++; continue }
+      tasks.push({
+        id: t.id,
+        name: typeof t.name === "string" ? t.name : "未命名任务",
+        done: t.done === true,
+        pomo: typeof t.pomo === "number" && t.pomo >= 0 ? t.pomo : 0
+      })
+    }
+  }
+  const pomoCycle =
+    typeof data.pomoCycle === "number" && data.pomoCycle >= 0 ? data.pomoCycle : 0
+  const activeTaskId =
+    data.activeTaskId === null || typeof data.activeTaskId === "string"
+      ? data.activeTaskId
+      : null
+  const settings =
+    data.settings && typeof data.settings === "object" && !Array.isArray(data.settings)
+      ? data.settings
+      : null
+
+  return {
+    data: { habits, sessions, habitChecks, tasks, pomoCycle, activeTaskId, settings },
+    skipped,
+    present
+  }
 }
 
 // ---------- 应用导入 ----------
@@ -109,10 +177,15 @@ function applyImport(mode) {
     state.habits = data.habits
     state.habitChecks = data.habitChecks
     state.sessions = data.sessions
+    // 仅当导入文件本身包含这些后加字段时才覆盖，避免用旧备份清空本地的任务/计数
+    if (data.present && data.present.tasks) state.tasks = data.tasks
+    if (data.present && data.present.pomoCycle) state.pomoCycle = data.pomoCycle
+    if (data.present && data.present.activeTaskId) state.activeTaskId = data.activeTaskId
     if (data.settings) state.settings = { ...state.settings, ...data.settings }
     msg.value = { type: "ok", text: "导入成功（已覆盖本地数据）" }
   } else {
-    // 合并：习惯按 id 去重取本地优先，打卡按天取并集，专注记录按 id 去重追加
+    // 合并：习惯按 id 去重取本地优先，打卡按天取并集，专注/任务按 id 去重追加，
+    // 番茄计数取较大值避免丢失，绑定任务本地优先
     const habitMap = new Map(state.habits.map((h) => [h.id, h]))
     for (const h of data.habits) if (!habitMap.has(h.id)) habitMap.set(h.id, h)
     state.habits = [...habitMap.values()]
@@ -127,6 +200,17 @@ function applyImport(mode) {
     for (const s of data.sessions) if (!sMap.has(s.id)) sMap.set(s.id, s)
     state.sessions = [...sMap.values()]
 
+    if (data.present && data.present.tasks) {
+      const tMap = new Map(state.tasks.map((t) => [t.id, t]))
+      for (const t of data.tasks) if (!tMap.has(t.id)) tMap.set(t.id, t)
+      state.tasks = [...tMap.values()]
+    }
+    if (data.present && data.present.pomoCycle) {
+      state.pomoCycle = Math.max(state.pomoCycle || 0, data.pomoCycle)
+    }
+    if (data.present && data.present.activeTaskId && !state.activeTaskId) {
+      state.activeTaskId = data.activeTaskId
+    }
     if (data.settings) state.settings = { ...state.settings, ...data.settings }
     msg.value = { type: "ok", text: "导入成功（已与本地数据合并）" }
   }
