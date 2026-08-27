@@ -3,7 +3,7 @@ import { ref, computed } from "vue"
 import { useStore } from "../store/useStore"
 import { todayKey, lastNDays, weekdayLabel } from "../utils/date"
 
-const { state } = useStore()
+const { state, uid } = useStore()
 
 const today = todayKey()
 
@@ -91,6 +91,19 @@ const weekHabit = computed(() =>
     return { day, rate: Math.round((done / total) * 100) }
   })
 )
+
+// ---------- 补记专注（记录离开番茄钟时完成的专注） ----------
+const logMin = ref(25)
+const logMsg = ref(null)
+let logMsgTimer = null
+function logSession() {
+  const m = Number(logMin.value)
+  if (!m || m <= 0) return
+  state.sessions.push({ id: uid(), minutes: m, ts: Date.now() })
+  logMsg.value = { type: "ok", text: `已补记 ${m} 分钟专注` }
+  clearTimeout(logMsgTimer)
+  logMsgTimer = setTimeout(() => (logMsg.value = null), 4000)
+}
 </script>
 
 <template>
@@ -110,6 +123,21 @@ const weekHabit = computed(() =>
         <div class="k-num">{{ todayHabitRate }}<small>%</small></div>
         <div class="k-label muted">习惯完成</div>
       </div>
+    </div>
+
+    <!-- 补记：记录离开番茄钟时完成的专注 -->
+    <div class="log-row">
+      <span class="muted">漏记了？</span>
+      <input
+        type="number"
+        min="1"
+        max="240"
+        v-model.number="logMin"
+        @keyup.enter="logSession"
+      />
+      <span class="muted">分</span>
+      <button class="btn small primary" @click="logSession">补记专注</button>
+      <span v-if="logMsg" class="log-msg" :class="logMsg.type">{{ logMsg.text }}</span>
     </div>
 
     <!-- 趋势图：周/月切换 + 指标切换 + 目标线 -->
@@ -216,6 +244,29 @@ const weekHabit = computed(() =>
 .k-label {
   font-size: 12px;
   margin-top: 2px;
+}
+
+/* 补记专注 */
+.log-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 14px 0 4px;
+  flex-wrap: wrap;
+}
+.log-row input {
+  width: 60px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+}
+.log-msg {
+  font-size: 12px;
+}
+.log-msg.ok {
+  color: var(--good);
 }
 
 .chart-block {

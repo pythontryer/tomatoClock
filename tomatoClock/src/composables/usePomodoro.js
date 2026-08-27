@@ -10,7 +10,13 @@ export function usePomodoro() {
   const mode = ref("focus") // 'focus' | 'break' | 'long'(长休息)
   const running = ref(false)
   const remaining = ref(state.settings.focusMin * 60)
+  // 本段的总时长（秒）：开始一段时锁定，进度计算以此为准，
+  // 避免计时中改设置导致进度跳变
+  const segmentTotal = ref(totalSeconds.value)
+  // 基于时间戳的计时：记录本段结束的绝对时刻，剩余时间由 Date.now() 推算，
+  // 这样即使标签页被后台节流（setInterval 降到约 1 次/分），倒计时依然准确
   let timer = null
+  let endAt = 0
 
   // 当前通知权限状态：'granted' | 'denied' | 'default' | 'unsupported'
   const notifPerm = ref(
@@ -37,13 +43,14 @@ export function usePomodoro() {
   })
 
   const progress = computed(() => {
-    const t = totalSeconds.value
+    const t = segmentTotal.value
     return t > 0 ? 1 - remaining.value / t : 0
   })
 
   const display = computed(() => {
-    const m = String(Math.floor(remaining.value / 60)).padStart(2, "0")
-    const s = String(remaining.value % 60).padStart(2, "0")
+    const sec = Math.floor(remaining.value)
+    const m = String(Math.floor(sec / 60)).padStart(2, "0")
+    const s = String(sec % 60).padStart(2, "0")
     return `${m}:${s}`
   })
 
@@ -191,19 +198,21 @@ export function usePomodoro() {
     }
   }
 
-  // ---------- 计时核心 ----------
-  function tick() {
-    if (remaining.value > 0) {
-      remaining.value--
-      if (remaining.value === 0) complete()
-    }
+  // ---------- 计时核心（基于时间戳，精度不受后台节流影响） ----------
+  function loop() {
+    const left = Math.max(0, (endAt - Date.now()) / 1000)
+    remaining.value = left
+    if (left <= 0) complete()
   }
 
   function start() {
     ensureAudio() // 借助用户手势激活音频
     if (running.value) return
     running.value = true
-    timer = setInterval(tick, 1000)
+    // 以「结束时刻」为锚点；从暂停恢复时 remaining 已是剩余秒数
+    endAt = Date.now() + remaining.value * 1000
+    // 250ms 刷新一次足够平滑；核心精度来自 Date.now()，与刷新频率无关
+    timer = setInterval(loop, 250)
     // 首次开始时顺带申请通知权限（此时用户已产生交互，权限弹窗合法）
     if (state.settings.notify && notifPerm.value === "default") requestNotify()
   }
@@ -212,17 +221,21 @@ export function usePomodoro() {
     running.value = false
     if (timer) clearInterval(timer)
     timer = null
+    // 暂停瞬间按真实时间结算剩余，避免整数秒累加误差
+    remaining.value = Math.max(0, (endAt - Date.now()) / 1000)
   }
 
   function reset() {
     pause()
     remaining.value = totalSeconds.value
+    segmentTotal.value = totalSeconds.value
   }
 
   function switchMode(m) {
     mode.value = m
     pause()
     remaining.value = totalSeconds.value
+    segmentTotal.value = totalSeconds.value
   }
 
   function complete() {
@@ -249,6 +262,7 @@ export function usePomodoro() {
     }
     playChime()
     remaining.value = totalSeconds.value
+    segmentTotal.value = totalSeconds.value
     // 自动开始下一段（默认关闭，避免在不经意间连续计时）
     if (state.settings.autoStart) start()
   }
@@ -270,7 +284,10 @@ export function usePomodoro() {
       mode.value
     ],
     () => {
-      if (!running.value) remaining.value = totalSeconds.value
+      if (!running.value) {
+        remaining.value = totalSeconds.value
+        segmentTotal.value = totalSeconds.value
+      }
     }
   )
 
