@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vite/
+.build-check/
+*.local
+.DS_Store
+
+# 本地工具记忆，不入库
+.workbuddy/
+
+# 第三方源码（非本项目，勿入库）
+OpenCPN*/
+opencpn-master.tar.gz
