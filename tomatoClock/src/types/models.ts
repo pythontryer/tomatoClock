@@ -46,15 +46,15 @@ export type TimerMode = 'focus' | 'break' | 'long'
 /** 陪伴角色的即时情绪（仅运行时，不持久化） */
 export type CompanionMood = 'idle' | 'focusing' | 'happy' | 'sad'
 
-/** 陪伴角色（数字宠物）状态，持久化到 localStorage */
+/** 陪伴角色（专注小园：随专注生长的数字植物）状态，持久化到 localStorage */
 export interface CompanionState {
-  /** 猫咪昵称 */
+  /** 小园昵称 */
   name: string
-  /** 专注币（鱼干）余额，由完成专注累积、解锁装饰消耗 */
+  /** 专注露珠余额，由完成专注累积、解锁装饰消耗 */
   coins: number
-  /** 已解锁的装饰 id（陪伴皮肤 + 庆祝特效共用此列表） */
+  /** 已解锁的装饰 id（植物形态 + 庆祝特效共用此列表） */
   unlocked: string[]
-  /** 当前选用的陪伴皮肤 id（必须在 unlocked 内） */
+  /** 当前选用的植物形态 id（必须在 unlocked 内） */
   activeCompanion: string
   /** 当前选用的庆祝特效 id（必须在 unlocked 内） */
   activeCelebration: string

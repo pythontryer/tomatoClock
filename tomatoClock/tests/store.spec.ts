@@ -158,41 +158,41 @@ describe('app store', () => {
 
   it('companion 初始拥有默认皮肤与庆祝，且默认选用', () => {
     const store = useAppStore()
-    expect(store.companion.unlocked).toContain('cat-cream')
+    expect(store.companion.unlocked).toContain('plant-succulent')
     expect(store.companion.unlocked).toContain('confetti')
-    expect(store.companion.activeCompanion).toBe('cat-cream')
+    expect(store.companion.activeCompanion).toBe('plant-succulent')
     expect(store.companion.activeCelebration).toBe('confetti')
   })
 
   it('unlockCosmetic 余额不足/已拥有/不存在均返回 false', () => {
     const store = useAppStore()
-    expect(store.unlockCosmetic('cat-orange')).toBe(false) // 余额 0 < 30
-    expect(store.unlockCosmetic('cat-cream')).toBe(false) // 已拥有
+    expect(store.unlockCosmetic('plant-mint')).toBe(false) // 余额 0 < 30
+    expect(store.unlockCosmetic('plant-succulent')).toBe(false) // 已拥有
     expect(store.unlockCosmetic('nope')).toBe(false) // 不存在
   })
 
   it('unlockCosmetic 成功则扣币、入列、并自动选用', () => {
     const store = useAppStore()
     store.companion.coins = 30
-    expect(store.unlockCosmetic('cat-orange')).toBe(true)
+    expect(store.unlockCosmetic('plant-mint')).toBe(true)
     expect(store.companion.coins).toBe(0)
-    expect(store.companion.unlocked).toContain('cat-orange')
-    expect(store.companion.activeCompanion).toBe('cat-orange') // 解锁后自动选用
+    expect(store.companion.unlocked).toContain('plant-mint')
+    expect(store.companion.activeCompanion).toBe('plant-mint') // 解锁后自动选用
   })
 
   it('setActiveCompanion 仅当已解锁时生效', () => {
     const store = useAppStore()
-    store.setActiveCompanion('cat-gray') // 未解锁，应忽略
-    expect(store.companion.activeCompanion).toBe('cat-cream')
-    store.companion.unlocked.push('cat-gray')
-    store.setActiveCompanion('cat-gray')
-    expect(store.companion.activeCompanion).toBe('cat-gray')
+    store.setActiveCompanion('plant-lavender') // 未解锁，应忽略
+    expect(store.companion.activeCompanion).toBe('plant-succulent')
+    store.companion.unlocked.push('plant-lavender')
+    store.setActiveCompanion('plant-lavender')
+    expect(store.companion.activeCompanion).toBe('plant-lavender')
   })
 
   it('setCompanionName / setCompanionMsg 夹紧长度', () => {
     const store = useAppStore()
     store.setCompanionName('')
-    expect(store.companion.name).toBe('小猫')
+    expect(store.companion.name).toBe('小绿')
     store.setCompanionName('a'.repeat(30))
     expect(store.companion.name.length).toBe(16)
     store.setCompanionMsg('complete', 'b'.repeat(80))

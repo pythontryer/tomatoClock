@@ -59,8 +59,8 @@ export function defaultCompanion(): CompanionState {
   return {
     name: DEFAULT_COMPANION_NAME,
     coins: 0,
-    unlocked: ['cat-cream', 'confetti'],
-    activeCompanion: 'cat-cream',
+    unlocked: ['plant-succulent', 'confetti'],
+    activeCompanion: 'plant-succulent',
     activeCelebration: 'confetti',
     completeMsg: '',
     failMsg: ''

@@ -4,7 +4,7 @@ import { useTimer } from '@/composables/useTimer'
 import { useSound } from '@/composables/useSound'
 import { useNotification } from '@/composables/useNotification'
 import { useAppStore } from '@/stores/useAppStore'
-import { SOUND_OPTIONS, focusCoins, FOCUS_GIFTS, getCelebration } from '@/constants'
+import { SOUND_OPTIONS, focusCoins, FOCUS_GIFTS, getCelebration, plantStage } from '@/constants'
 import TimerSettings from './timer/TimerSettings.vue'
 import Companion from './Companion.vue'
 
@@ -34,22 +34,22 @@ function onBreakComplete() {
 // ---------- 陪伴角色 + 奖励循环 ----------
 const reward = ref<{ gift: string; coins: number } | null>(null)
 const missMsg = ref<string | null>(null)
-const petMsg = ref<string | null>(null)
+const tendMsg = ref<string | null>(null)
 let rewardTimer: ReturnType<typeof setTimeout> | null = null
 let missTimer: ReturnType<typeof setTimeout> | null = null
-let petTimer: ReturnType<typeof setTimeout> | null = null
+let tendTimer: ReturnType<typeof setTimeout> | null = null
 
-const DEFAULT_COMPLETE = '🍅 专注完成！猫咪叼来了小礼物~'
-const DEFAULT_FAIL = '这次小猫有点饿，下次再陪你专注吧'
+const DEFAULT_COMPLETE = '🍅 专注完成！小园又长高了一点~'
+const DEFAULT_FAIL = '这次小苗渴了，下次再陪它专注吧'
 
 function clearTimers() {
   if (rewardTimer) clearTimeout(rewardTimer)
   if (missTimer) clearTimeout(missTimer)
-  if (petTimer) clearTimeout(petTimer)
-  rewardTimer = missTimer = petTimer = null
+  if (tendTimer) clearTimeout(tendTimer)
+  rewardTimer = missTimer = tendTimer = null
 }
 
-// 专注完成：弹奖励（随机礼物 + 专注币）。礼物仅作惊喜展示，币值已在 store.recordFocus 中入账
+// 专注完成：弹奖励（随机礼物 + 专注露珠）。礼物仅作惊喜展示，币值已在 store.recordFocus 中入账
 function showReward(minutes: number) {
   const gift = FOCUS_GIFTS[Math.floor(Math.random() * FOCUS_GIFTS.length)]
   reward.value = { gift, coins: focusCoins(minutes) }
@@ -61,10 +61,10 @@ function showMiss() {
   clearTimers()
   missTimer = setTimeout(() => (missMsg.value = null), 4000)
 }
-function onPet() {
-  petMsg.value = '🐱 呼噜呼噜~'
+function onTend() {
+  tendMsg.value = '🌱 谢谢你的照料~'
   clearTimers()
-  petTimer = setTimeout(() => (petMsg.value = null), 1800)
+  tendTimer = setTimeout(() => (tendMsg.value = null), 1800)
 }
 
 /** 放弃当前专注（仅在专注进行中点击重置才算“提前退出”，给温和提示；暂停后重置不算） */
@@ -251,23 +251,24 @@ function openStandalone() {
       <Companion
         :mood="companionMood"
         :skin-id="store.companion.activeCompanion"
+        :stage="plantStage(store.pomoCycle)"
         :celebration="celebrationChar"
         :name="store.companion.name"
-        @pet="onPet"
+        @tend="onTend"
       />
-      <div class="coin-badge" title="专注币（鱼干），完成专注获得">🐟 {{ store.companion.coins }}</div>
+      <div class="coin-badge" title="专注露珠，完成专注获得">💧 {{ store.companion.coins }}</div>
     </div>
 
     <transition name="fade">
       <div v-if="reward" class="reward-pop" role="status">
         <div class="reward-gift">{{ reward.gift }}</div>
         <div class="reward-text">{{ store.companion.completeMsg || DEFAULT_COMPLETE }}</div>
-        <div class="reward-coins">+{{ reward.coins }} 🐟</div>
+        <div class="reward-coins">+{{ reward.coins }} 💧</div>
       </div>
     </transition>
 
     <div v-if="missMsg" class="miss-hint" role="status">{{ missMsg }}</div>
-    <div v-if="petMsg" class="pet-hint">{{ petMsg }}</div>
+    <div v-if="tendMsg" class="tend-hint">{{ tendMsg }}</div>
 
     <div class="ring-wrap">      <svg class="ring" viewBox="0 0 280 280">
         <circle class="ring-bg" cx="140" cy="140" :r="R" />
@@ -611,7 +612,7 @@ function openStandalone() {
   text-align: center;
   max-width: 260px;
 }
-.pet-hint {
+.tend-hint {
   margin: 4px 0 0;
   font-size: 12px;
   color: var(--accent);

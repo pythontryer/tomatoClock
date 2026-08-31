@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { loadState, withDefaults } from './persistence'
 import { uid } from '@/utils/id'
 import { todayKey } from '@/utils/date'
-import { focusCoins, findCosmetic, COMPANION_SKINS, CELEBRATIONS } from '@/constants'
+import { focusCoins, findCosmetic, PLANT_FORMS, CELEBRATIONS } from '@/constants'
 import type { AppState, Task, HabitFreq } from '@/types/models'
 import type { SanitizedData } from '@/utils/importExport'
 
@@ -134,8 +134,8 @@ export const useAppStore = defineStore('app', {
       s.note = typeof note === 'string' ? note : ''
     },
 
-    // ---------- 陪伴角色（数字宠物）----------
-    /** 解锁一个装饰（陪伴皮肤或庆祝特效）。余额不足/已拥有/不存在时返回 false */
+    // ---------- 陪伴角色（专注小园）----------
+    /** 解锁一个装饰（植物形态或庆祝特效）。余额不足/已拥有/不存在时返回 false */
     unlockCosmetic(id: string): boolean {
       const item = findCosmetic(id)
       if (!item) return false
@@ -144,7 +144,7 @@ export const useAppStore = defineStore('app', {
       this.companion.coins -= item.cost
       this.companion.unlocked.push(id)
       // 解锁后自动选用，让奖励立即可见
-      if (COMPANION_SKINS.some((s) => s.id === id)) this.companion.activeCompanion = id
+      if (PLANT_FORMS.some((s) => s.id === id)) this.companion.activeCompanion = id
       if (CELEBRATIONS.some((c) => c.id === id)) this.companion.activeCelebration = id
       return true
     },
@@ -157,7 +157,7 @@ export const useAppStore = defineStore('app', {
     },
     setCompanionName(name: string) {
       const n = (name || '').trim().slice(0, 16)
-      this.companion.name = n || '小猫'
+      this.companion.name = n || '小绿'
     },
     setCompanionMsg(kind: 'complete' | 'fail', text: string) {
       const t = (text || '').slice(0, 60)

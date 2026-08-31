@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
-import { COMPANION_SKINS, CELEBRATIONS, getCelebration } from '@/constants'
+import { PLANT_FORMS, CELEBRATIONS, getCelebration, plantStage } from '@/constants'
 import Companion from './Companion.vue'
 
 const store = useAppStore()
@@ -33,30 +33,31 @@ function celebrationChar() {
 
 <template>
   <section class="card shop">
-    <h2>🐱 陪伴小屋</h2>
+    <h2>🌱 专注小园</h2>
     <p class="muted sub">
-      完成专注赚 <b>🐟 专注币</b>，解锁猫猫皮肤与庆祝特效。数据只存在你本机。
+      完成专注攒 <b>💧 专注露珠</b>，解锁植物形态与庆祝特效，陪你的小园一天天长高、开花。数据只存在你本机。
     </p>
 
-    <div class="balance">余额：🐟 {{ coins }}</div>
+    <div class="balance">余额：💧 {{ coins }}</div>
 
     <div class="preview">
       <Companion
         mood="idle"
         :skin-id="store.companion.activeCompanion"
+        :stage="plantStage(store.pomoCycle)"
         :celebration="celebrationChar()"
         :name="store.companion.name"
       />
     </div>
 
     <div class="field">
-      <label>给猫猫起个名字</label>
-      <input v-model="name" maxlength="16" placeholder="小猫" />
+      <label>给小园起个名字</label>
+      <input v-model="name" maxlength="16" placeholder="小绿" />
     </div>
 
-    <h3>陪伴形象</h3>
+    <h3>植物形态</h3>
     <div class="grid2">
-      <div v-for="s in COMPANION_SKINS" :key="s.id" class="item" :class="{ owned: isUnlocked(s.id) }">
+      <div v-for="s in PLANT_FORMS" :key="s.id" class="item" :class="{ owned: isUnlocked(s.id) }">
         <div class="item-name">{{ s.name }}</div>
         <div class="item-desc muted">{{ s.desc }}</div>
         <button
@@ -65,7 +66,7 @@ function celebrationChar() {
           :disabled="!canAfford(s.cost)"
           @click="store.unlockCosmetic(s.id)"
         >
-          解锁 · {{ s.cost }}🐟
+          解锁 · {{ s.cost }}💧
         </button>
         <button
           v-else-if="store.companion.activeCompanion !== s.id"
@@ -89,7 +90,7 @@ function celebrationChar() {
           :disabled="!canAfford(c.cost)"
           @click="store.unlockCosmetic(c.id)"
         >
-          解锁 · {{ c.cost }}🐟
+          解锁 · {{ c.cost }}💧
         </button>
         <button
           v-else-if="store.companion.activeCelebration !== c.id"
@@ -105,11 +106,11 @@ function celebrationChar() {
     <h3>自定义寄语</h3>
     <div class="field">
       <label>完成专注时（留空用默认）</label>
-      <input v-model="completeMsg" maxlength="60" placeholder="🍅 专注完成！猫咪叼来了小礼物~" />
+      <input v-model="completeMsg" maxlength="60" placeholder="🍅 专注完成！小园又长高了一点~" />
     </div>
     <div class="field">
       <label>提前退出时（留空用默认，温和不羞辱）</label>
-      <input v-model="failMsg" maxlength="60" placeholder="这次小猫有点饿，下次再陪你专注吧" />
+      <input v-model="failMsg" maxlength="60" placeholder="这次小苗渴了，下次再陪它专注吧" />
     </div>
   </section>
 </template>
