@@ -4,8 +4,9 @@ import { useTimer } from '@/composables/useTimer'
 import { useSound } from '@/composables/useSound'
 import { useNotification } from '@/composables/useNotification'
 import { useAppStore } from '@/stores/useAppStore'
-import { SOUND_OPTIONS } from '@/constants'
+import { SOUND_OPTIONS, focusCoins, FOCUS_GIFTS, getCelebration } from '@/constants'
 import TimerSettings from './timer/TimerSettings.vue'
+import Companion from './Companion.vue'
 
 const store = useAppStore()
 const sound = useSound()
@@ -14,7 +15,7 @@ const notif = useNotification()
 const { playChime, previewSound, unlockAudio } = sound
 const { notifPerm, notifAction, inIframe, requestNotify, notify } = notif
 
-// 番茄结束时的副作用：通知 + 提示音 + 打开复盘
+// 番茄结束时的副作用：通知 + 提示音 + 奖励弹层 + 打开复盘
 function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
   if (isLong) {
     notify('🍅 专注完成！', `已完成 ${store.pomoCycle} 个番茄，享受一次长休息吧~`)
@@ -22,12 +23,64 @@ function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
     notify('🍅 专注完成！', `本番茄专注 ${minutes} 分钟，起来休息一下吧~`)
   }
   playChime()
+  showReward(minutes)
   openReflection(sessionId)
 }
 function onBreakComplete() {
   notify('☕ 休息结束', '休息结束，开始下一个番茄吧！')
   playChime()
 }
+
+// ---------- 陪伴角色 + 奖励循环 ----------
+const reward = ref<{ gift: string; coins: number } | null>(null)
+const missMsg = ref<string | null>(null)
+const petMsg = ref<string | null>(null)
+let rewardTimer: ReturnType<typeof setTimeout> | null = null
+let missTimer: ReturnType<typeof setTimeout> | null = null
+let petTimer: ReturnType<typeof setTimeout> | null = null
+
+const DEFAULT_COMPLETE = '🍅 专注完成！猫咪叼来了小礼物~'
+const DEFAULT_FAIL = '这次小猫有点饿，下次再陪你专注吧'
+
+function clearTimers() {
+  if (rewardTimer) clearTimeout(rewardTimer)
+  if (missTimer) clearTimeout(missTimer)
+  if (petTimer) clearTimeout(petTimer)
+  rewardTimer = missTimer = petTimer = null
+}
+
+// 专注完成：弹奖励（随机礼物 + 专注币）。礼物仅作惊喜展示，币值已在 store.recordFocus 中入账
+function showReward(minutes: number) {
+  const gift = FOCUS_GIFTS[Math.floor(Math.random() * FOCUS_GIFTS.length)]
+  reward.value = { gift, coins: focusCoins(minutes) }
+  clearTimers()
+  rewardTimer = setTimeout(() => (reward.value = null), 4500)
+}
+function showMiss() {
+  missMsg.value = store.companion.failMsg || DEFAULT_FAIL
+  clearTimers()
+  missTimer = setTimeout(() => (missMsg.value = null), 4000)
+}
+function onPet() {
+  petMsg.value = '🐱 呼噜呼噜~'
+  clearTimers()
+  petTimer = setTimeout(() => (petMsg.value = null), 1800)
+}
+
+/** 放弃当前专注（仅在专注进行中点击重置才算“提前退出”，给温和提示；暂停后重置不算） */
+function onReset() {
+  if (running.value && mode.value === 'focus') showMiss()
+  reset()
+}
+
+const companionMood = computed<'idle' | 'focusing' | 'happy' | 'sad'>(() => {
+  if (reward.value) return 'happy'
+  if (missMsg.value) return 'sad'
+  if (running.value && mode.value === 'focus') return 'focusing'
+  return 'idle'
+})
+const celebrationChar = computed(() => getCelebration(store.companion.activeCelebration).particle)
+
 
 // ---------- 专注意图 + 复盘 ----------
 const intention = ref('')
@@ -90,7 +143,10 @@ function onKey(e: KeyboardEvent) {
   }
 }
 onMounted(() => window.addEventListener('keydown', onKey))
-onUnmounted(() => window.removeEventListener('keydown', onKey))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKey)
+  clearTimers()
+})
 
 const R = 120
 const C = 2 * Math.PI * R
@@ -191,6 +247,28 @@ function openStandalone() {
       />
     </div>
 
+    <div class="companion-area">
+      <Companion
+        :mood="companionMood"
+        :skin-id="store.companion.activeCompanion"
+        :celebration="celebrationChar"
+        :name="store.companion.name"
+        @pet="onPet"
+      />
+      <div class="coin-badge" title="专注币（鱼干），完成专注获得">🐟 {{ store.companion.coins }}</div>
+    </div>
+
+    <transition name="fade">
+      <div v-if="reward" class="reward-pop" role="status">
+        <div class="reward-gift">{{ reward.gift }}</div>
+        <div class="reward-text">{{ store.companion.completeMsg || DEFAULT_COMPLETE }}</div>
+        <div class="reward-coins">+{{ reward.coins }} 🐟</div>
+      </div>
+    </transition>
+
+    <div v-if="missMsg" class="miss-hint" role="status">{{ missMsg }}</div>
+    <div v-if="petMsg" class="pet-hint">{{ petMsg }}</div>
+
     <div class="ring-wrap">      <svg class="ring" viewBox="0 0 280 280">
         <circle class="ring-bg" cx="140" cy="140" :r="R" />
         <circle
@@ -216,7 +294,7 @@ function openStandalone() {
     <div class="controls">
       <button v-if="!running" class="btn primary" @click="handleStart">开始</button>
       <button v-else class="btn" @click="pause">暂停</button>
-      <button class="btn ghost" @click="reset">重置</button>
+      <button class="btn ghost" @click="onReset">重置</button>
     </div>
 
     <div v-if="reflectId" class="reflect">
@@ -290,6 +368,7 @@ function openStandalone() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 .modes {
   display: flex;
@@ -471,5 +550,84 @@ function openStandalone() {
 .btn.sm {
   padding: 3px 10px;
   font-size: 12px;
+}
+.companion-area {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 2px 0 4px;
+}
+.coin-badge {
+  position: absolute;
+  right: 0;
+  top: 6px;
+  font-size: 13px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.reward-pop {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: 220px;
+  padding: 14px 12px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: pop-in 0.35s ease;
+}
+@keyframes pop-in {
+  0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+.reward-gift {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.reward-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.reward-coins {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.miss-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  max-width: 260px;
+}
+.pet-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-pop {
+    animation: none;
+  }
 }
 </style>

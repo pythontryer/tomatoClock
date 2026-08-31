@@ -5,6 +5,7 @@ import HabitList from './components/HabitList.vue'
 import StatsPanel from './components/StatsPanel.vue'
 import DataManager from './components/DataManager.vue'
 import TaskBoard from './components/TaskBoard.vue'
+import CompanionShop from './components/CompanionShop.vue'
 import ToastHost from './components/ToastHost.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useHabitReminders } from '@/composables/useHabitReminders'
@@ -46,6 +47,7 @@ function toggleTheme() {
       <HabitList class="cell" />
       <StatsPanel class="cell stats-cell" />
       <DataManager class="cell stats-cell" />
+      <CompanionShop class="cell stats-cell" />
     </main>
 
     <ToastHost />

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { loadState, withDefaults } from './persistence'
 import { uid } from '@/utils/id'
 import { todayKey } from '@/utils/date'
+import { focusCoins, findCosmetic, COMPANION_SKINS, CELEBRATIONS } from '@/constants'
 import type { AppState, Task, HabitFreq } from '@/types/models'
 import type { SanitizedData } from '@/utils/importExport'
 
@@ -106,7 +107,7 @@ export const useAppStore = defineStore('app', {
       this.sessions.push({ id: uid(), minutes, ts: Date.now() })
     },
 
-    /** 完成一个专注番茄：记录会话、推进长休息节奏、给绑定任务 +1 🍅 ；返回新建会话 id 以便复盘 */
+    /** 完成一个专注番茄：记录会话、推进长休息节奏、给绑定任务 +1 🍅 、给陪伴角色发放专注币；返回新建会话 id 以便复盘 */
     recordFocus(minutes: number, intention?: string): string {
       const id = uid()
       this.sessions.push({
@@ -120,6 +121,8 @@ export const useAppStore = defineStore('app', {
       this.pomoCycle += 1
       const t = this.tasks.find((x) => x.id === this.activeTaskId)
       if (t) t.pomo += 1
+      // 完成专注 → 陪伴角色获得专注币（完成才是奖励，提前退出不奖励）
+      this.companion.coins += focusCoins(minutes)
       return id
     },
 
@@ -129,6 +132,37 @@ export const useAppStore = defineStore('app', {
       if (!s) return
       s.rating = Math.max(0, Math.min(5, Math.round(rating || 0)))
       s.note = typeof note === 'string' ? note : ''
+    },
+
+    // ---------- 陪伴角色（数字宠物）----------
+    /** 解锁一个装饰（陪伴皮肤或庆祝特效）。余额不足/已拥有/不存在时返回 false */
+    unlockCosmetic(id: string): boolean {
+      const item = findCosmetic(id)
+      if (!item) return false
+      if (this.companion.unlocked.includes(id)) return false
+      if (this.companion.coins < item.cost) return false
+      this.companion.coins -= item.cost
+      this.companion.unlocked.push(id)
+      // 解锁后自动选用，让奖励立即可见
+      if (COMPANION_SKINS.some((s) => s.id === id)) this.companion.activeCompanion = id
+      if (CELEBRATIONS.some((c) => c.id === id)) this.companion.activeCelebration = id
+      return true
+    },
+
+    setActiveCompanion(id: string) {
+      if (this.companion.unlocked.includes(id)) this.companion.activeCompanion = id
+    },
+    setActiveCelebration(id: string) {
+      if (this.companion.unlocked.includes(id)) this.companion.activeCelebration = id
+    },
+    setCompanionName(name: string) {
+      const n = (name || '').trim().slice(0, 16)
+      this.companion.name = n || '小猫'
+    },
+    setCompanionMsg(kind: 'complete' | 'fail', text: string) {
+      const t = (text || '').slice(0, 60)
+      if (kind === 'complete') this.companion.completeMsg = t
+      else this.companion.failMsg = t
     },
 
     // ---------- 导入 ----------

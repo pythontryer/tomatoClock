@@ -1,6 +1,6 @@
 import { STORAGE_KEY, DEFAULT_SETTINGS, SCHEMA_VERSION, CORRUPT_BACKUP_KEY } from '@/constants'
 import type { AppState } from '@/types/models'
-import { normalizeHabit, normalizeTask, normalizeSession } from '@/utils/normalize'
+import { normalizeHabit, normalizeTask, normalizeSession, normalizeCompanion } from '@/utils/normalize'
 
 /**
  * 从 localStorage 读取原始数据。
@@ -65,6 +65,7 @@ export function withDefaults(base: Partial<AppState> | null): AppState {
       b.activeTaskId === null || typeof b.activeTaskId === 'string'
         ? (b.activeTaskId ?? null)
         : null,
-    settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) }
+    settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) },
+    companion: normalizeCompanion(b.companion)
   }
 }

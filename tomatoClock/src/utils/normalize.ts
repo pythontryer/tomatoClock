@@ -1,4 +1,5 @@
-import type { Habit, HabitFreq, Session, Task } from '@/types/models'
+import type { CompanionState, Habit, HabitFreq, Session, Task } from '@/types/models'
+import { DEFAULT_COMPANION_NAME } from '@/constants'
 
 /**
  * 归一化工具：把「可能有缺失字段」的对象补齐为完整、合法的领域模型。
@@ -51,5 +52,54 @@ export function normalizeSession(
     intention: typeof s.intention === 'string' ? s.intention : '',
     rating: typeof s.rating === 'number' && s.rating >= 1 && s.rating <= 5 ? s.rating : 0,
     note: typeof s.note === 'string' ? s.note : ''
+  }
+}
+
+export function defaultCompanion(): CompanionState {
+  return {
+    name: DEFAULT_COMPANION_NAME,
+    coins: 0,
+    unlocked: ['cat-cream', 'confetti'],
+    activeCompanion: 'cat-cream',
+    activeCelebration: 'confetti',
+    completeMsg: '',
+    failMsg: ''
+  }
+}
+
+/**
+ * 归一化陪伴角色状态。只补默认、不抛错；已解锁列表与当前选用项都会回退到合法默认值，
+ * 避免导入/老备份里指向已不存在的装饰 id 导致界面取不到数据。
+ */
+export function normalizeCompanion(
+  c: Partial<CompanionState> | null | undefined
+): CompanionState {
+  const d = defaultCompanion()
+  if (!c || typeof c !== 'object') return d
+  const unlocked = Array.isArray(c.unlocked)
+    ? Array.from(
+        new Set([
+          ...d.unlocked,
+          ...c.unlocked.filter((x): x is string => typeof x === 'string' && !!x)
+        ])
+      )
+    : d.unlocked
+  const activeCompanion =
+    typeof c.activeCompanion === 'string' && unlocked.includes(c.activeCompanion)
+      ? c.activeCompanion
+      : d.activeCompanion
+  const activeCelebration =
+    typeof c.activeCelebration === 'string' && unlocked.includes(c.activeCelebration)
+      ? c.activeCelebration
+      : d.activeCelebration
+  return {
+    name:
+      typeof c.name === 'string' && c.name.trim() ? c.name.trim().slice(0, 16) : d.name,
+    coins: typeof c.coins === 'number' && c.coins >= 0 ? Math.floor(c.coins) : 0,
+    unlocked,
+    activeCompanion,
+    activeCelebration,
+    completeMsg: typeof c.completeMsg === 'string' ? c.completeMsg.slice(0, 60) : '',
+    failMsg: typeof c.failMsg === 'string' ? c.failMsg.slice(0, 60) : ''
   }
 }

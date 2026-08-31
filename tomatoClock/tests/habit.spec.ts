@@ -96,11 +96,11 @@ describe('streakOf 频率感知连续打卡', () => {
     expect(streakOf(stateWithChecks(h, keys), h.id)).toBe(3)
   })
 
-  it('每周一：最近一个周一未打、更早两个打了 → 0（断签）', () => {
+  it('每周一：最近一个周一未打、更早一个打了 → 0（断签）', () => {
+    const now = new Date(2026, 0, 7) // 周三：最近的周一(01-05)为过去的到期日
     const h = makeHabit({ freq: 'weekly', freqDays: [1] })
-    const [mostRecent, prev] = pastWeekdayKeys(1, 2)
-    expect(streakOf(stateWithChecks(h, [prev]), h.id)).toBe(0)
-    expect(mostRecent).toBeTruthy()
+    // 只打了更早的周一(2025-12-29)，最近的周一(2026-01-05)漏打 → 断签
+    expect(streakOf(stateWithChecks(h, ['2025-12-29']), h.id, now)).toBe(0)
   })
 
   it('非到期日不中断连续；今天（到期但未打）也不中断历史', () => {
