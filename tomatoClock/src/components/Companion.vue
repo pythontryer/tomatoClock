@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { CompanionMood } from '@/types/models'
-import { getForm } from '@/constants'
+import {
+  getForm,
+  PLANT_STAGE_COUNT,
+  PLANT_STAGE_STEM_HEIGHTS,
+  PLANT_STAGE_LEAF_PAIRS,
+  PLANT_BLOOM_STAGE
+} from '@/constants'
 
 const props = defineProps<{
   mood: CompanionMood
   /** 植物形态 id（多肉/薄荷/薰衣草/向日葵…） */
   skinId: string
-  /** 成长阶段 0-3，由已完成专注数推导 */
+  /** 成长阶段 0 ~ PLANT_STAGE_COUNT-1，由已完成专注数推导 */
   stage: number
   /** 庆祝特效字符（如 🎉 / ⭐ / 💗），仅在 happy 时飘出 */
   celebration?: string
@@ -18,9 +24,12 @@ const emit = defineEmits<{ (e: 'tend'): void }>()
 
 const body = computed(() => getForm(props.skinId).body)
 
-const stemH = computed(() => [16, 36, 52, 62][Math.min(3, Math.max(0, props.stage))])
+const stageIdx = computed(() =>
+  Math.min(PLANT_STAGE_COUNT - 1, Math.max(0, Math.floor(props.stage)))
+)
+const stemH = computed(() => PLANT_STAGE_STEM_HEIGHTS[stageIdx.value])
 const stemTopY = computed(() => 118 - stemH.value)
-const pairCount = computed(() => [1, 2, 3, 4][Math.min(3, Math.max(0, props.stage))])
+const pairCount = computed(() => PLANT_STAGE_LEAF_PAIRS[stageIdx.value])
 
 // 沿茎生成左右对称的叶片位置
 const leaves = computed(() => {
@@ -34,7 +43,7 @@ const leaves = computed(() => {
   return arr
 })
 
-const blooming = computed(() => props.stage >= 3)
+const blooming = computed(() => stageIdx.value >= PLANT_BLOOM_STAGE)
 const particles = computed(() => (props.mood === 'happy' ? [0, 1, 2, 3, 4] : []))
 const particle = computed(() => props.celebration || '🎉')
 </script>

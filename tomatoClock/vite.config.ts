@@ -7,7 +7,9 @@ export default defineConfig({
   base: './',
   // 构建产物输出到仓库根 docs/（GitHub Pages 源路径只支持 / 或 /docs）
   build: {
-    outDir: '../docs'
+    outDir: '../docs',
+    // outDir 在项目根之外，Vite 默认不清空以策安全；显式启用，替代原 build 脚本中的 rm -rf
+    emptyOutDir: true
   },
   plugins: [vue()],
   resolve: {

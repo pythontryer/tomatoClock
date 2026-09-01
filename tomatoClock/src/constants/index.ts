@@ -90,6 +90,20 @@ export const SOUND_OPTIONS: { value: SoundType; label: string }[] = [
 
 export const DEFAULT_COMPANION_NAME = '小绿'
 
+/**
+ * 植物成长节奏参数（集中调参，避免魔数散落）
+ * 阶段从 0 开始，共 PLANT_STAGE_COUNT 个阶段；每完成 POMO_PER_PLANT_STAGE 个番茄进阶一次。
+ */
+export const PLANT_STAGE_COUNT = 4
+/** 每进阶一个成长阶段所需的专注番茄数 */
+export const POMO_PER_PLANT_STAGE = 4
+/** 各阶段茎高度（px），索引 = 阶段号 */
+export const PLANT_STAGE_STEM_HEIGHTS = [16, 36, 52, 62] as const
+/** 各阶段叶片对数，索引 = 阶段号 */
+export const PLANT_STAGE_LEAF_PAIRS = [1, 2, 3, 4] as const
+/** 达到此阶段即开花（绽放） */
+export const PLANT_BLOOM_STAGE = 3
+
 /** 植物形态：决定植株主色；id 同时作为解锁项写入 companion.unlocked */
 export interface PlantForm {
   id: string
@@ -150,11 +164,12 @@ export function findCosmetic(id: string): PlantForm | Celebration | undefined {
 }
 
 /**
- * 由已完成专注数推导植物成长阶段 0-3：每完成 4 次进阶，第 12 次绽放。
+ * 由已完成专注数推导植物成长阶段：
+ * 每完成 POMO_PER_PLANT_STAGE 次进阶，最高 PLANT_STAGE_COUNT-1 阶段（绽放）。
  * 用于让专注小园随专注记录“长高、长叶、开花”，把抽象积累变成可见的生长。
  */
 export function plantStage(pomoCycle: number): number {
   const n = Number(pomoCycle)
   if (!Number.isFinite(n) || n < 0) return 0
-  return Math.min(3, Math.floor(n / 4))
+  return Math.min(PLANT_STAGE_COUNT - 1, Math.floor(n / POMO_PER_PLANT_STAGE))
 }
