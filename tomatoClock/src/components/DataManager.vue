@@ -81,7 +81,7 @@ function onFileChange(e: Event) {
           text: `📋 「${file.name}」校验通过，包含 ${parts.join('、')}。请选择导入方式：`
         }
       }
-    } catch (err) {
+    } catch {
       msg.value = {
         type: 'err',
         text: `❌ 「${file.name}」文件读取失败，请确认是从本应用导出的备份文件`
