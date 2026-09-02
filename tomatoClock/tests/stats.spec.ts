@@ -6,6 +6,8 @@ import { todayKey, lastNDays } from '@/utils/date'
 import KpiCards from '@/components/stats/KpiCards.vue'
 import TaskDistribution from '@/components/stats/TaskDistribution.vue'
 import HabitRateChart from '@/components/stats/HabitRateChart.vue'
+import TaskEstimateVariance from '@/components/stats/TaskEstimateVariance.vue'
+import TrendChart from '@/components/stats/TrendChart.vue'
 import type { Habit, Session, Task } from '@/types/models'
 
 let pinia: Pinia
@@ -179,5 +181,122 @@ describe('HabitRateChart', () => {
     const fills = wrapper.findAll('.bar-fill')
     // 今天（第一列）应该是 50%
     expect(fills[0].attributes('style')).toContain('height: 50%')
+  })
+})
+
+describe('TaskEstimateVariance', () => {
+  it('无预估任务时不渲染', () => {
+    const store = useAppStore()
+    store.tasks.push(task('无预估', 2, 0))
+    const wrapper = mount(TaskEstimateVariance, { global: { plugins: [pinia] } })
+    expect(wrapper.find('.variance').exists()).toBe(false)
+  })
+
+  it('过滤 estimate=0 的任务，仅显示有预估的', () => {
+    const store = useAppStore()
+    store.tasks.push(task('无预估', 3, 0), task('有预估', 2, 4))
+    const wrapper = mount(TaskEstimateVariance, { global: { plugins: [pinia] } })
+    expect(wrapper.findAll('.row')).toHaveLength(1)
+    expect(wrapper.find('.rname').text()).toBe('有预估')
+  })
+
+  it('超标任务排在前面', () => {
+    const store = useAppStore()
+    store.tasks.push(task('达标', 3, 4), task('超标', 6, 4))
+    const wrapper = mount(TaskEstimateVariance, { global: { plugins: [pinia] } })
+    const names = wrapper.findAll('.rname').map((n) => n.text())
+    expect(names).toEqual(['超标', '达标'])
+  })
+
+  it('进度条宽度按 min(1, actual/est) 计算，超标封顶100%', () => {
+    const store = useAppStore()
+    store.tasks.push(task('半完成', 2, 4), task('超标', 8, 4))
+    const wrapper = mount(TaskEstimateVariance, { global: { plugins: [pinia] } })
+    const fills = wrapper.findAll('.fill')
+    // 超标排第一：8/4=2 → 封顶 100%
+    expect(fills[0].attributes('style')).toContain('width: 100%')
+    // 半完成：2/4=0.5 → 50%
+    expect(fills[1].attributes('style')).toContain('width: 50%')
+  })
+
+  it('达标/超标样式类正确', () => {
+    const store = useAppStore()
+    store.tasks.push(task('超标', 5, 4), task('达标', 4, 4), task('未达标', 2, 4))
+    const wrapper = mount(TaskEstimateVariance, { global: { plugins: [pinia] } })
+    const fills = wrapper.findAll('.fill')
+    expect(fills[0].classes()).toContain('over')
+    expect(fills[1].classes()).toContain('done')
+    expect(fills[2].classes()).not.toContain('done')
+    expect(fills[2].classes()).not.toContain('over')
+  })
+
+  it('汇总统计正确', () => {
+    const store = useAppStore()
+    store.tasks.push(task('A', 3, 4), task('B', 5, 4))
+    const wrapper = mount(TaskEstimateVariance, { global: { plugins: [pinia] } })
+    expect(wrapper.find('.title').text()).toContain('共 2 项')
+    expect(wrapper.find('.title').text()).toContain('已达标 1 项')
+    expect(wrapper.find('.footer').text()).toContain('实际 8 / 预估 8')
+  })
+})
+
+describe('TrendChart', () => {
+  it('默认周视图（7天），时长指标', () => {
+    const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
+    expect(wrapper.find('.chart-title').text()).toContain('近 7 天专注时长')
+    expect(wrapper.findAll('.track')).toHaveLength(7)
+  })
+
+  it('每日专注时长正确聚合', () => {
+    const store = useAppStore()
+    store.sessions.push(sessionToday(25), sessionToday(50), sessionPast(30, 1))
+    const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
+    const tracks = wrapper.findAll('.track')
+    // lastNDays 从远到近，今天是最后一个（索引6），昨天是索引5
+    const todayTitle = tracks[6].attributes('title') || ''
+    expect(todayTitle).toContain('75')
+    const yesterdayTitle = tracks[5].attributes('title') || ''
+    expect(yesterdayTitle).toContain('30')
+  })
+
+  it('切换到个数指标显示番茄数', async () => {
+    const store = useAppStore()
+    store.sessions.push(sessionToday(25), sessionToday(50))
+    const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
+    const buttons = wrapper.findAll('.seg button')
+    // 第二个 seg 组的第二个按钮是"个数"
+    await buttons[3].trigger('click')
+    expect(wrapper.find('.chart-title').text()).toContain('近 7 天完成番茄数')
+    const todayTitle = wrapper.findAll('.track')[6].attributes('title') || ''
+    expect(todayTitle).toContain('2')
+  })
+
+  it('切换到月视图显示30天', async () => {
+    const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
+    const buttons = wrapper.findAll('.seg button')
+    // 第一个 seg 组的第二个按钮是"月"
+    await buttons[1].trigger('click')
+    expect(wrapper.find('.chart-title').text()).toContain('近 30 天')
+    expect(wrapper.findAll('.track')).toHaveLength(30)
+  })
+
+  it('汇总统计：合计、日均、达标天数', () => {
+    const store = useAppStore()
+    store.settings.dailyFocusTarget = 60
+    // 今天 75 分钟（达标），昨天 30 分钟（不达标），其余 0
+    store.sessions.push(sessionToday(75), sessionPast(30, 1))
+    const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
+    const summary = wrapper.find('.summary').text()
+    expect(summary).toContain('合计 105')
+    expect(summary).toContain('日均 15')
+    expect(summary).toContain('达标 1/7 天')
+  })
+
+  it('目标线在目标>0时显示', () => {
+    const store = useAppStore()
+    store.settings.dailyFocusTarget = 120
+    const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
+    expect(wrapper.find('.target-line').exists()).toBe(true)
+    expect(wrapper.find('.target-label').text()).toContain('目标 120分')
   })
 })
