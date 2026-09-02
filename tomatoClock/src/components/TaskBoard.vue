@@ -165,21 +165,72 @@ function estBadge(t: Task): { text: string; cls: string } {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+.list li:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .list li.active {
   border-color: var(--accent);
   background: var(--accent-soft);
+  box-shadow: 0 2px 12px rgba(91, 108, 255, 0.15);
+}
+.list li.active::before {
+  background: var(--accent-gradient);
+}
+.list li.done {
+  opacity: 0.7;
 }
 .list li.done .name {
   text-decoration: line-through;
   color: var(--muted);
+}
+/* 自定义 checkbox */
+.row input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  background: var(--card);
+}
+.row input[type='checkbox']:hover {
+  border-color: var(--accent);
+}
+.row input[type='checkbox']:checked {
+  background: var(--accent-gradient);
+  border-color: transparent;
+}
+.row input[type='checkbox']:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 .name {
   flex: 1;
@@ -190,9 +241,13 @@ function estBadge(t: Task): { text: string; cls: string } {
 }
 .pomo {
   font-size: 13px;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--accent);
   min-width: 42px;
   text-align: right;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--accent-soft);
 }
 .estimate {
   display: flex;
@@ -204,15 +259,17 @@ function estBadge(t: Task): { text: string; cls: string } {
 }
 .est-text {
   white-space: nowrap;
+  font-weight: 500;
 }
 .badge {
   font-size: 10px;
-  padding: 1px 6px;
+  padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
+  font-weight: 600;
 }
 .badge.ok {
-  background: var(--good);
+  background: linear-gradient(135deg, #2bbf8a, #1fb6d6);
   color: #fff;
 }
 .badge.doing {
@@ -222,6 +279,27 @@ function estBadge(t: Task): { text: string; cls: string } {
 .badge.idle {
   background: var(--bg);
   color: var(--muted);
+}
+.bind {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.bind:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.bind.on {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(91, 108, 255, 0.3);
 }
 .est-set {
   font-size: 12px;

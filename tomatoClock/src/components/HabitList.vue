@@ -246,7 +246,7 @@ function streak(habitId: string) {
         </template>
 
         <template v-else>
-          <span class="hname">{{ h.name }}</span>
+          <span class="hname" :class="{ done: isChecked(h.id) }">{{ h.name }}</span>
           <span v-if="h.freq && h.freq !== 'daily'" class="freq muted" :title="freqSummary(h)">
             {{ freqSummary(h) }}
           </span>
@@ -364,20 +364,27 @@ function streak(habitId: string) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 4px;
-  border-radius: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
   transition:
-    box-shadow 0.15s ease,
-    opacity 0.15s ease;
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.list li:hover {
+  background: var(--accent-soft);
 }
 .list li.dragging {
   opacity: 0.4;
+  transform: scale(0.98);
 }
 .list li.drag-over {
   box-shadow: inset 0 2px 0 var(--accent);
+  background: var(--accent-soft);
 }
 .list li.notdue {
-  opacity: 0.62;
+  opacity: 0.55;
 }
 .handle {
   cursor: grab;
@@ -390,20 +397,48 @@ function streak(habitId: string) {
   cursor: grabbing;
 }
 .check {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
   border: 2px solid var(--border);
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 700;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: transparent;
+  position: relative;
+}
+.check:hover:not(.on) {
+  border-color: var(--good);
+  transform: scale(1.1);
 }
 .check.on {
-  background: var(--good);
-  border-color: var(--good);
+  background: linear-gradient(135deg, #2bbf8a 0%, #1fb6d6 100%);
+  border-color: transparent;
+  box-shadow: 0 3px 10px rgba(43, 191, 138, 0.35);
+  animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes checkPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.check.on::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  background: radial-gradient(circle, rgba(43, 191, 138, 0.2) 0%, transparent 70%);
+  z-index: -1;
+  animation: checkGlow 0.6s ease-out;
+}
+@keyframes checkGlow {
+  0% { opacity: 1; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.5); }
 }
 .bar {
   width: 4px;
@@ -414,17 +449,31 @@ function streak(habitId: string) {
 .hname {
   flex: 1;
   font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.hname.done {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+  color: var(--muted);
 }
 .freq {
   font-size: 12px;
   background: var(--accent-soft);
   color: var(--accent);
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   white-space: nowrap;
+  font-weight: 500;
 }
 .streak {
   font-size: 13px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 174, 66, 0.12), rgba(255, 107, 107, 0.08));
+  color: var(--warn);
+  white-space: nowrap;
 }
 .icon-btn {
   color: var(--muted);

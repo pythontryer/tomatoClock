@@ -83,6 +83,44 @@ input {
   font-family: inherit;
 }
 
+input[type='text'],
+input[type='number'],
+input[type='time'],
+input[type='date'],
+textarea,
+select {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  font-size: 14px;
+  color: var(--text);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+input[type='text']:focus,
+input[type='number']:focus,
+input[type='time']:focus,
+input[type='date']:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91, 108, 255, 0.12);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.6;
+}
+
 .card {
   background: var(--card);
   border-radius: var(--radius);
