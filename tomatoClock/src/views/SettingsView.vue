@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import DataManager from '@/components/DataManager.vue'
 import TimerSettings from '@/components/timer/TimerSettings.vue'
+import SoundCustomizer from '@/components/SoundCustomizer.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useNotification } from '@/composables/useNotification'
 
@@ -85,6 +86,9 @@ async function toggleNotify() {
 
     <!-- 计时器设置 -->
     <TimerSettings />
+
+    <!-- 提示音设置 -->
+    <SoundCustomizer />
 
     <!-- 数据管理 -->
     <DataManager />

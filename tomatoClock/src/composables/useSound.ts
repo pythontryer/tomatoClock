@@ -5,10 +5,35 @@ import type { SoundType } from '@/types/models'
 
 // 模块级共享：AudioContext 在用户手势时创建/恢复，番茄结束时直接播放
 let audioCtx: AudioContext | null = null
+// 自定义提示音用 HTMLAudioElement 播放 base64
+let audioEl: HTMLAudioElement | null = null
+
+function getAudioEl(): HTMLAudioElement {
+  if (!audioEl) {
+    audioEl = new Audio()
+    audioEl.preload = 'auto'
+  }
+  return audioEl
+}
 
 /** WebAudio 提示音合成（无需音频文件） */
 export function useSound() {
   const store = useAppStore()
+
+  /** 播放自定义提示音（base64 data URL），返回是否成功 */
+  function playCustom(customId: string): boolean {
+    const sound = store.settings.customSounds.find((s) => s.id === customId)
+    if (!sound) return false
+    try {
+      const el = getAudioEl()
+      el.src = sound.data
+      el.currentTime = 0
+      el.play().catch(() => {})
+      return true
+    } catch {
+      return false
+    }
+  }
 
   async function ensureAudio(): Promise<AudioContext | null> {
     try {
@@ -50,10 +75,15 @@ export function useSound() {
 
   async function playChime(): Promise<boolean> {
     if (!store.settings.sound) return false
+    const type = store.settings.soundType
+    // 自定义提示音
+    if (type.startsWith('custom-')) {
+      return playCustom(type)
+    }
     const ctx = await ensureAudio()
     if (!ctx || ctx.state !== 'running') return false
     try {
-      const profile = SOUND_PROFILES[store.settings.soundType] ?? SOUND_PROFILES.chime
+      const profile = SOUND_PROFILES[type as keyof typeof SOUND_PROFILES] ?? SOUND_PROFILES.chime
       scheduleProfile(ctx, profile)
       return true
     } catch {
@@ -63,10 +93,13 @@ export function useSound() {
 
   /** 设置面板「试听」用：播放指定类型，不受 sound 开关限制 */
   async function previewSound(type: SoundType): Promise<boolean> {
+    if (typeof type === 'string' && type.startsWith('custom-')) {
+      return playCustom(type)
+    }
     const ctx = await ensureAudio()
     if (!ctx || ctx.state !== 'running') return false
     try {
-      const profile = SOUND_PROFILES[type] ?? SOUND_PROFILES.chime
+      const profile = SOUND_PROFILES[type as keyof typeof SOUND_PROFILES] ?? SOUND_PROFILES.chime
       scheduleProfile(ctx, profile)
       return true
     } catch {

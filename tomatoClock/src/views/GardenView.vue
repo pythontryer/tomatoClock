@@ -3,13 +3,23 @@ import { computed, ref } from 'vue'
 import Companion from '@/components/Companion.vue'
 import CompanionShop from '@/components/CompanionShop.vue'
 import { useAppStore } from '@/stores/useAppStore'
-import { plantStage } from '@/constants'
+import { plantStage, getFocusLevel, getNextLevel } from '@/constants'
 
 const store = useAppStore()
 
 const stage = computed(() => plantStage(store.pomoCycle))
 const stageNames = ['种子', '发芽', '成长', '绽放']
 const stageName = computed(() => stageNames[stage.value] || '绽放')
+
+// 专注等级
+const currentLevel = computed(() => getFocusLevel(store.pomoCycle))
+const nextLevel = computed(() => getNextLevel(store.pomoCycle))
+const levelProgress = computed(() => {
+  if (!nextLevel.value) return 100
+  const prev = currentLevel.value.minPomo
+  const next = nextLevel.value.minPomo
+  return Math.min(100, Math.round(((store.pomoCycle - prev) / (next - prev)) * 100))
+})
 
 // 浇水反馈
 const tendMsg = ref<string | null>(null)
@@ -50,6 +60,24 @@ function onTend() {
       <div class="stage-badge">
         <span class="stage-label">当前阶段</span>
         <span class="stage-name">{{ stageName }}</span>
+      </div>
+
+      <!-- 专注等级 -->
+      <div class="focus-level">
+        <div class="level-header">
+          <span class="level-icon">{{ currentLevel.icon }}</span>
+          <span class="level-name">{{ currentLevel.name }}</span>
+          <span class="level-pomo">累计 {{ store.pomoCycle }} 番茄</span>
+        </div>
+        <div v-if="nextLevel" class="level-progress">
+          <div class="level-progress-bar">
+            <div class="level-progress-fill" :style="{ width: levelProgress + '%' }"></div>
+          </div>
+          <span class="level-progress-text">
+            再完成 {{ nextLevel.minPomo - store.pomoCycle }} 个番茄升级为「{{ nextLevel.name }}」
+          </span>
+        </div>
+        <div v-else class="level-max">已达最高等级，继续保持！</div>
       </div>
 
       <div class="hero-stats">
@@ -129,6 +157,58 @@ function onTend() {
   font-size: 14px;
   font-weight: 700;
   color: var(--accent);
+}
+/* 专注等级 */
+.focus-level {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(255, 174, 66, 0.08), rgba(255, 107, 107, 0.08));
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 174, 66, 0.2);
+}
+.level-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.level-icon {
+  font-size: 20px;
+}
+.level-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.level-pomo {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.level-progress-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffae42, #ff6b6b);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+.level-progress-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+.level-max {
+  font-size: 12px;
+  color: var(--good);
+  font-weight: 600;
+  text-align: center;
 }
 .hero-stats {
   display: flex;

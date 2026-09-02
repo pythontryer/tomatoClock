@@ -168,6 +168,30 @@ export const useAppStore = defineStore('app', {
       return true
     },
 
+    // ---------- 自定义提示音 ----------
+    /** 添加自定义提示音（上传或录音），返回新提示音 id；超过数量上限返回 null */
+    addCustomSound(name: string, data: string): string | null {
+      const MAX_CUSTOM = 5
+      const MAX_SIZE = 800 * 1024 // 约 800KB base64
+      if (this.settings.customSounds.length >= MAX_CUSTOM) return null
+      if (data.length > MAX_SIZE) return null
+      const id = 'custom-' + Date.now()
+      this.settings.customSounds.push({
+        id,
+        name: (name || '自定义提示音').slice(0, 20),
+        data,
+        createdAt: Date.now()
+      })
+      return id
+    },
+    /** 删除自定义提示音，如果当前正在使用则切回默认 chime */
+    removeCustomSound(id: string) {
+      this.settings.customSounds = this.settings.customSounds.filter((s) => s.id !== id)
+      if (this.settings.soundType === id) {
+        this.settings.soundType = 'chime'
+      }
+    },
+
     // ---------- 导入 ----------
     overwrite(data: SanitizedData) {
       this.habits = data.habits

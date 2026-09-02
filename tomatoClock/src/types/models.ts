@@ -40,8 +40,18 @@ export interface Task {
 }
 
 export type Theme = 'light' | 'dark'
-export type SoundType = 'chime' | 'bell' | 'wood' | 'beep'
+export type SoundType = 'chime' | 'bell' | 'wood' | 'beep' | string // string 允许自定义提示音 id
 export type TimerMode = 'focus' | 'break' | 'long'
+
+/** 用户自定义提示音（上传或录音），base64 存储在 localStorage */
+export interface CustomSound {
+  id: string
+  name: string
+  /** base64 data URL，如 data:audio/webm;base64,... */
+  data: string
+  /** 创建时间戳 */
+  createdAt: number
+}
 
 /** 陪伴角色的即时情绪（仅运行时，不持久化） */
 export type CompanionMood = 'idle' | 'focusing' | 'happy' | 'sad'
@@ -78,6 +88,8 @@ export interface Settings {
   dailyFocusTarget: number
   dailyPomoTarget: number
   theme: Theme
+  /** 用户自定义提示音列表 */
+  customSounds: CustomSound[]
 }
 
 /** 持久化到 localStorage 的完整应用状态 */

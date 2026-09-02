@@ -18,7 +18,8 @@ export const DEFAULT_SETTINGS: Settings = {
   soundType: 'chime',
   dailyFocusTarget: 120,
   dailyPomoTarget: 8,
-  theme: 'light'
+  theme: 'light',
+  customSounds: []
 }
 
 export const HABIT_COLORS = [
@@ -85,6 +86,40 @@ export const SOUND_OPTIONS: { value: SoundType; label: string }[] = [
   { value: 'wood', label: '木鱼' },
   { value: 'beep', label: '电子 beep' }
 ]
+
+// ---------- 专注等级系统 ----------
+export interface FocusLevel {
+  minPomo: number
+  name: string
+  icon: string
+}
+
+/** 专注等级：按累计番茄数划分，纯展示不影响功能 */
+export const FOCUS_LEVELS: FocusLevel[] = [
+  { minPomo: 0, name: '专注新手', icon: '🌱' },
+  { minPomo: 10, name: '专注学徒', icon: '🌿' },
+  { minPomo: 30, name: '专注达人', icon: '🌳' },
+  { minPomo: 60, name: '专注专家', icon: '🏅' },
+  { minPomo: 100, name: '专注大师', icon: '🏆' },
+  { minPomo: 200, name: '专注宗师', icon: '👑' }
+]
+
+/** 根据累计番茄数获取当前等级 */
+export function getFocusLevel(pomoCount: number): FocusLevel {
+  let level = FOCUS_LEVELS[0]
+  for (const l of FOCUS_LEVELS) {
+    if (pomoCount >= l.minPomo) level = l
+  }
+  return level
+}
+
+/** 获取下一级信息（已满级返回 null） */
+export function getNextLevel(pomoCount: number): FocusLevel | null {
+  for (const l of FOCUS_LEVELS) {
+    if (pomoCount < l.minPomo) return l
+  }
+  return null
+}
 
 // ---------- 陪伴角色（专注小园：随专注生长的数字植物）----------
 
