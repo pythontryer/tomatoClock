@@ -116,6 +116,17 @@ async function toggleNotify() {
         数据全部存储在浏览器本地，不上传任何服务器<br />
         支持 PWA 安装到桌面，离线可用
       </p>
+      <div class="about-links">
+        <a href="https://github.com/pythontryer/tomatoClock" target="_blank" rel="noopener" class="about-link">
+          <span>🐙</span> GitHub 仓库
+        </a>
+        <a href="https://github.com/pythontryer/tomatoClock/issues" target="_blank" rel="noopener" class="about-link">
+          <span>💬</span> 反馈建议 / 报 Bug
+        </a>
+        <a href="https://github.com/pythontryer/tomatoClock#readme" target="_blank" rel="noopener" class="about-link">
+          <span>📖</span> 使用文档
+        </a>
+      </div>
     </section>
   </div>
 </template>
@@ -139,8 +150,30 @@ async function toggleNotify() {
 .about-text {
   font-size: 13px;
   line-height: 1.8;
-  margin: 12px 0 0;
+  margin: 12px 0 14px;
   color: var(--muted);
+}
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.about-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.about-link:hover {
+  background: var(--accent);
+  color: #fff;
 }
 .notif-status {
   font-size: 11px;

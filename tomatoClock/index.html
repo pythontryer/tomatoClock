@@ -7,6 +7,26 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
     <title>专注与习惯面板</title>
+    <!-- 百度统计：替换 你的百度统计ID 为实际站点 ID（如 1234567890abcdef） -->
+    <script>
+      var _hmt = _hmt || [];
+      (function () {
+        var hm = document.createElement('script')
+        hm.src = 'https://hm.baidu.com/hm.js?你的百度统计ID'
+        var s = document.getElementsByTagName('script')[0]
+        s.parentNode.insertBefore(hm, s)
+      })()
+    </script>
+    <!-- Google Analytics 4：替换 G-XXXXXXXXXX 为实际 GA4 衡量 ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+      gtag('config', 'G-XXXXXXXXXX')
+    </script>
   </head>
   <body>
     <div id="app"></div>

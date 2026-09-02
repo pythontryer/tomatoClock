@@ -57,7 +57,11 @@
 
 ## 🖼 截图
 
-> 截图待补充：建议放置 3-5 张应用截图（番茄钟页、小园页、统计页、设置页）
+| 专注页 | 统计页 |
+|---|---|
+| ![专注页](docs/screenshots/01-focus.png) | ![统计页](docs/screenshots/02-stats.png) |
+| 小园页 | 设置页 |
+| ![小园页](docs/screenshots/03-garden.png) | ![设置页](docs/screenshots/04-settings.png) |
 
 ---
 
