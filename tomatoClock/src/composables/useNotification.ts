@@ -9,8 +9,15 @@ export type NotifAction =
 export function useNotification() {
   const store = useAppStore()
 
+  // 是否安全上下文（HTTPS 或 localhost）。HTTP 公网 IP 下浏览器直接禁用 Notification，不会弹权限框
+  const isSecure = typeof window !== 'undefined' && window.isSecureContext
+
   const notifPerm = ref<NotifPerm>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+    (() => {
+      if (typeof Notification === 'undefined') return 'unsupported'
+      if (!isSecure) return 'unsupported' // HTTP 环境：通知不可用
+      return Notification.permission
+    })()
   )
   const notifAction = ref<NotifAction>(null)
 
@@ -40,6 +47,12 @@ export function useNotification() {
 
   function requestNotify(): Promise<NotifPerm> {
     if (typeof Notification === 'undefined') {
+      notifPerm.value = 'unsupported'
+      notifAction.value = 'unsupported'
+      return Promise.resolve('unsupported')
+    }
+    // HTTP 公网环境：浏览器禁用 Notification，不会弹权限框，直接标记为不支持
+    if (!isSecure) {
       notifPerm.value = 'unsupported'
       notifAction.value = 'unsupported'
       return Promise.resolve('unsupported')
@@ -94,5 +107,5 @@ export function useNotification() {
     })
   }
 
-  return { notifPerm, notifAction, inIframe, requestNotify, notify }
+  return { notifPerm, notifAction, inIframe, isSecure, requestNotify, notify }
 }

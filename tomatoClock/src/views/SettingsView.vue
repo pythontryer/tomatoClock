@@ -7,24 +7,35 @@ import { useAppStore } from '@/stores/useAppStore'
 import { useNotification } from '@/composables/useNotification'
 
 const store = useAppStore()
-const { notifPerm, requestNotify } = useNotification()
+const { notifPerm, isSecure, requestNotify } = useNotification()
 
 const notifStatus = ref('')
 
 async function toggleNotify() {
   store.settings.notify = !store.settings.notify
-  if (store.settings.notify && notifPerm.value === 'default') {
+  if (!store.settings.notify) {
+    notifStatus.value = ''
+    return
+  }
+  // HTTP 公网环境：浏览器禁用通知，给出明确说明
+  if (!isSecure) {
+    notifStatus.value = '⚠️ 当前为 HTTP 访问，浏览器已禁用桌面通知。请使用 HTTPS 访问后再开启（或在 localhost 下使用）。'
+    store.settings.notify = false
+    return
+  }
+  if (notifPerm.value === 'default') {
     notifStatus.value = '正在申请通知权限…'
     const result = await requestNotify()
     notifStatus.value =
       result === 'granted'
         ? '✅ 通知已开启'
         : result === 'denied'
-          ? '❌ 通知被拒绝，请在浏览器设置中允许'
+          ? '❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」'
           : '⚠️ 未选择，可再次点击开启'
-    setTimeout(() => (notifStatus.value = ''), 4000)
-  } else {
-    notifStatus.value = ''
+    setTimeout(() => (notifStatus.value = ''), 5000)
+  } else if (notifPerm.value === 'denied') {
+    notifStatus.value = '❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」'
+    store.settings.notify = false
   }
 }
 </script>
@@ -58,11 +69,15 @@ async function toggleNotify() {
         <div class="setting-info">
           <div class="setting-title">桌面通知</div>
           <div class="setting-desc">番茄结束时弹出系统通知</div>
+          <div v-if="!isSecure" class="notif-warn">
+            ⚠️ 当前为 HTTP 访问，浏览器已禁用桌面通知。需使用 HTTPS 访问后才能开启。
+          </div>
           <div v-if="notifStatus" class="notif-status">{{ notifStatus }}</div>
         </div>
         <button
           class="switch-toggle"
           :class="{ on: store.settings.notify }"
+          :disabled="!isSecure"
           @click="toggleNotify"
         >
           <span class="knob" />
@@ -132,5 +147,16 @@ async function toggleNotify() {
   margin-top: 4px;
   color: var(--accent);
   font-weight: 500;
+}
+.notif-warn {
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--warn);
+  font-weight: 500;
+  line-height: 1.5;
+}
+.switch-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>
