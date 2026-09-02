@@ -35,7 +35,8 @@ function celebrationChar() {
   <section class="card shop">
     <h2>🌱 专注小园</h2>
     <p class="muted sub">
-      完成专注攒 <b>💧 专注露珠</b>，解锁植物形态与庆祝特效，陪你的小园一天天长高、开花。数据只存在你本机。
+      完成专注攒
+      <b>💧 专注露珠</b>，解锁植物形态与庆祝特效，陪你的小园一天天长高、开花。数据只存在你本机。
     </p>
 
     <div class="balance">余额：💧 {{ coins }}</div>

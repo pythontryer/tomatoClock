@@ -165,8 +165,7 @@ export function useTimer(hooks: TimerHooks) {
       return
     }
     const icon = mode.value === 'focus' ? '🍅' : '☕'
-    const label =
-      mode.value === 'focus' ? '专注中' : mode.value === 'long' ? '长休息中' : '休息中'
+    const label = mode.value === 'focus' ? '专注中' : mode.value === 'long' ? '长休息中' : '休息中'
     document.title = running.value
       ? `${icon} ${display.value} ${label}`
       : `${icon} ${display.value} 已暂停`

@@ -166,7 +166,11 @@ function streak(habitId: string) {
         v-for="h in store.habits"
         :key="h.id"
         :draggable="editingId !== h.id"
-        :class="{ dragging: dragId === h.id, 'drag-over': dragOverId === h.id, notdue: !isDueToday(h) }"
+        :class="{
+          dragging: dragId === h.id,
+          'drag-over': dragOverId === h.id,
+          notdue: !isDueToday(h)
+        }"
         @dragstart="onDragStart(h.id, $event)"
         @dragover.prevent="dragOverId = h.id"
         @dragleave="dragOverId = null"
@@ -174,14 +178,28 @@ function streak(habitId: string) {
         @dragend="dragId = null; dragOverId = null"
       >
         <span class="handle" title="拖拽排序">⠿</span>
-        <button class="check" :class="{ on: isChecked(h.id) }" :aria-label="isChecked(h.id) ? '取消打卡' : '标记打卡'" :aria-pressed="isChecked(h.id)" @click="store.toggleHabitCheck(h.id)">
+        <button
+          class="check"
+          :class="{ on: isChecked(h.id) }"
+          :aria-label="isChecked(h.id) ? '取消打卡' : '标记打卡'"
+          :aria-pressed="isChecked(h.id)"
+          @click="store.toggleHabitCheck(h.id)"
+        >
           <span v-if="isChecked(h.id)">✓</span>
         </button>
         <span class="bar" :style="{ background: h.color }" />
 
         <template v-if="editingId === h.id">
           <div class="edit-box">
-            <input v-model="editName" v-focus class="edit-input" maxlength="40" aria-label="习惯名称" @keyup.enter="saveEdit" @keyup.esc="cancelEdit" />
+            <input
+              v-model="editName"
+              v-focus
+              class="edit-input"
+              maxlength="40"
+              aria-label="习惯名称"
+              @keyup.enter="saveEdit"
+              @keyup.esc="cancelEdit"
+            />
             <div class="freq-row compact">
               <select v-model="editFreq" class="freq-select">
                 <option value="daily">每日</option>
@@ -216,7 +234,9 @@ function streak(habitId: string) {
                 class="remind-clear"
                 title="清除提醒"
                 @click="editRemind = ''"
-              >清除</button>
+              >
+                清除
+              </button>
             </div>
             <div class="edit-actions">
               <button class="btn primary sm" @click="saveEdit">保存</button>
@@ -233,8 +253,12 @@ function streak(habitId: string) {
           <span class="streak muted" :title="`连续 ${streak(h.id)} 天`">
             🔥 {{ streak(h.id) }}
           </span>
-          <button class="icon-btn" title="编辑" aria-label="重命名习惯" @click="startEdit(h)">✎</button>
-          <button class="del" title="删除" aria-label="删除习惯" @click="store.removeHabit(h.id)">×</button>
+          <button class="icon-btn" title="编辑" aria-label="重命名习惯" @click="startEdit(h)">
+            ✎
+          </button>
+          <button class="del" title="删除" aria-label="删除习惯" @click="store.removeHabit(h.id)">
+            ×
+          </button>
         </template>
       </li>
     </ul>
@@ -342,7 +366,9 @@ function streak(habitId: string) {
   gap: 10px;
   padding: 2px 4px;
   border-radius: 10px;
-  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
 }
 .list li.dragging {
   opacity: 0.4;

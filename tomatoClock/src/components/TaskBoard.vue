@@ -66,7 +66,8 @@ function estBadge(t: Task): { text: string; cls: string } {
     </div>
 
     <p v-if="store.activeTask" class="active-hint">
-      🎯 计时绑定任务：<b>{{ store.activeTask.name }}</b>（完成后自动 +1 🍅）
+      🎯 计时绑定任务：<b>{{ store.activeTask.name }}</b
+      >（完成后自动 +1 🍅）
     </p>
 
     <ul v-if="store.tasks.length" class="list">
@@ -113,7 +114,9 @@ function estBadge(t: Task): { text: string; cls: string } {
         >
           {{ t.id === store.activeTaskId ? '计时中' : '绑定' }}
         </button>
-        <button class="del" title="删除" aria-label="删除任务" @click.stop="store.removeTask(t.id)">✕</button>
+        <button class="del" title="删除" aria-label="删除任务" @click.stop="store.removeTask(t.id)">
+          ✕
+        </button>
       </li>
     </ul>
     <p v-else class="empty muted">还没有任务，添加后点「绑定」即可把番茄计入任务。</p>
@@ -166,7 +169,9 @@ function estBadge(t: Task): { text: string; cls: string } {
   border: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .list li.active {
   border-color: var(--accent);

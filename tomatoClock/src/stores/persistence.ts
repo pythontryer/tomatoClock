@@ -1,6 +1,11 @@
 import { STORAGE_KEY, DEFAULT_SETTINGS, SCHEMA_VERSION, CORRUPT_BACKUP_KEY } from '@/constants'
 import type { AppState } from '@/types/models'
-import { normalizeHabit, normalizeTask, normalizeSession, normalizeCompanion } from '@/utils/normalize'
+import {
+  normalizeHabit,
+  normalizeTask,
+  normalizeSession,
+  normalizeCompanion
+} from '@/utils/normalize'
 
 /**
  * 从 localStorage 读取原始数据。

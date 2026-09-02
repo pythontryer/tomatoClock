@@ -18,12 +18,7 @@ export const useAppStore = defineStore('app', {
 
   actions: {
     // ---------- 习惯 ----------
-    addHabit(
-      name: string,
-      color: string,
-      freq: HabitFreq = 'daily',
-      freqDays: number[] = []
-    ) {
+    addHabit(name: string, color: string, freq: HabitFreq = 'daily', freqDays: number[] = []) {
       const n = name.trim()
       if (!n) return
       this.habits.push({
@@ -48,7 +43,8 @@ export const useAppStore = defineStore('app', {
     setHabitRemind(id: string, remindAt: string | null) {
       const h = this.habits.find((x) => x.id === id)
       if (!h) return
-      h.remindAt = typeof remindAt === 'string' && /^\d{1,2}:\d{2}$/.test(remindAt) ? remindAt : null
+      h.remindAt =
+        typeof remindAt === 'string' && /^\d{1,2}:\d{2}$/.test(remindAt) ? remindAt : null
     },
 
     removeHabit(id: string) {

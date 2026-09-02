@@ -3,14 +3,7 @@ import { useAppStore } from '@/stores/useAppStore'
 
 export type NotifPerm = 'granted' | 'denied' | 'default' | 'unsupported'
 export type NotifAction =
-  | null
-  | 'pending'
-  | 'granted'
-  | 'denied'
-  | 'dismissed'
-  | 'error'
-  | 'timeout'
-  | 'unsupported'
+  null | 'pending' | 'granted' | 'denied' | 'dismissed' | 'error' | 'timeout' | 'unsupported'
 
 /** 桌面通知：权限申请（带看门狗超时）+ 通知发送 */
 export function useNotification() {
@@ -68,8 +61,7 @@ export function useNotification() {
         done = true
         clearTimeout(watchdog)
         notifPerm.value = p
-        notifAction.value =
-          p === 'granted' ? 'granted' : p === 'denied' ? 'denied' : 'dismissed'
+        notifAction.value = p === 'granted' ? 'granted' : p === 'denied' ? 'denied' : 'dismissed'
         if (p === 'granted') {
           notify('✅ 桌面通知已开启', '番茄结束时会在系统右下角弹窗提醒你')
         }
@@ -79,8 +71,7 @@ export function useNotification() {
       try {
         // 现代浏览器返回 Promise；旧 Safari 只支持回调形式
         const r = Notification.requestPermission(settle) as unknown as
-          | Promise<NotificationPermission>
-          | undefined
+          Promise<NotificationPermission> | undefined
         if (r && typeof r.then === 'function') {
           r.then(settle).catch(() => {
             if (done) return

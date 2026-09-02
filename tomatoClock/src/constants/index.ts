@@ -158,9 +158,7 @@ export function getCelebration(id: string): Celebration {
 
 /** 在列表中按 id 找到装饰（植物形态或庆祝皆可），找不到返回 undefined */
 export function findCosmetic(id: string): PlantForm | Celebration | undefined {
-  return (
-    PLANT_FORMS.find((s) => s.id === id) ?? CELEBRATIONS.find((c) => c.id === id)
-  )
+  return PLANT_FORMS.find((s) => s.id === id) ?? CELEBRATIONS.find((c) => c.id === id)
 }
 
 /**

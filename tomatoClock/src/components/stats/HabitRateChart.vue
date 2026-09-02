@@ -11,9 +11,7 @@ const weekHabit = computed(() =>
   lastNDays(7).map((day) => {
     const due = store.habits.filter((h) => isDueOnKey(h, day))
     if (!due.length) return { day, rate: null as number | null }
-    const done = due.filter(
-      (h) => store.habitChecks[day] && store.habitChecks[day][h.id]
-    ).length
+    const done = due.filter((h) => store.habitChecks[day] && store.habitChecks[day][h.id]).length
     return { day, rate: Math.round((done / due.length) * 100) }
   })
 )

@@ -81,7 +81,6 @@ const companionMood = computed<'idle' | 'focusing' | 'happy' | 'sad'>(() => {
 })
 const celebrationChar = computed(() => getCelebration(store.companion.activeCelebration).particle)
 
-
 // ---------- 专注意图 + 复盘 ----------
 const intention = ref('')
 const reflectId = ref<string | null>(null)
@@ -116,17 +115,10 @@ function skipReflection() {
   reflectId.value = null
 }
 
-const {
-  mode,
-  running,
-  display,
-  progress,
-  cycleInfo,
-  start,
-  pause,
-  reset,
-  switchMode
-} = useTimer({ onFocusComplete, onBreakComplete })
+const { mode, running, display, progress, cycleInfo, start, pause, reset, switchMode } = useTimer({
+  onFocusComplete,
+  onBreakComplete
+})
 
 // 键盘快捷键：空格 开始/暂停，R 重置（输入控件聚焦时不触发）
 function onKey(e: KeyboardEvent) {
@@ -157,7 +149,10 @@ let soundMsgTimer: ReturnType<typeof setTimeout> | null = null
 async function testSound() {
   const ok = await previewSound(store.settings.soundType)
   soundMsg.value = ok
-    ? { type: 'ok', text: '✅ 提示音已播放——若没听到，请检查系统音量、输出设备，或标签页是否被静音' }
+    ? {
+        type: 'ok',
+        text: '✅ 提示音已播放——若没听到，请检查系统音量、输出设备，或标签页是否被静音'
+      }
     : {
         type: 'err',
         text: inIframe
@@ -186,11 +181,20 @@ const notifyHint = computed(() => {
   }
   if (notifPerm.value === 'denied') {
     return inIframe
-      ? { cls: 'err', text: '❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请点击下方按钮在独立浏览器窗口打开后再点「开启通知」' }
-      : { cls: 'err', text: '❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」' }
+      ? {
+          cls: 'err',
+          text: '❌ 申请被拒：嵌入预览窗口中浏览器会拦截通知权限。请点击下方按钮在独立浏览器窗口打开后再点「开启通知」'
+        }
+      : {
+          cls: 'err',
+          text: '❌ 已被浏览器拒绝：点击地址栏左侧的 🔒/铃铛图标，把通知设为「允许」后再点「开启通知」'
+        }
   }
   if (a === 'error') {
-    return { cls: 'err', text: '❌ 权限申请失败：当前环境可能不允许申请通知，请在独立浏览器窗口中打开本页重试' }
+    return {
+      cls: 'err',
+      text: '❌ 权限申请失败：当前环境可能不允许申请通知，请在独立浏览器窗口中打开本页重试'
+    }
   }
   if (a === 'timeout') {
     return {
@@ -204,7 +208,10 @@ const notifyHint = computed(() => {
     return { cls: 'err', text: '弹窗未做选择，可再次点击「开启通知」' }
   }
   return inIframe
-    ? { cls: 'muted', text: '💡 嵌入预览窗口中浏览器通常会拦截通知权限，建议在独立浏览器窗口中使用' }
+    ? {
+        cls: 'muted',
+        text: '💡 嵌入预览窗口中浏览器通常会拦截通知权限，建议在独立浏览器窗口中使用'
+      }
     : { cls: 'muted', text: '尚未授权，点击「开启通知」并在弹窗中允许，番茄结束即可收到桌面提醒' }
 })
 
@@ -270,7 +277,8 @@ function openStandalone() {
     <div v-if="missMsg" class="miss-hint" role="status">{{ missMsg }}</div>
     <div v-if="tendMsg" class="tend-hint">{{ tendMsg }}</div>
 
-    <div class="ring-wrap">      <svg class="ring" viewBox="0 0 280 280">
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 280 280">
         <circle class="ring-bg" cx="140" cy="140" :r="R" />
         <circle
           class="ring-fg"
@@ -309,7 +317,9 @@ function openStandalone() {
           class="star"
           :class="{ on: n <= reflectRating }"
           @click="setRating(n)"
-        >★</button>
+        >
+          ★
+        </button>
         <span class="muted">{{ reflectRating ? reflectRating + ' 分' : '未评分' }}</span>
       </div>
       <textarea
@@ -586,8 +596,14 @@ function openStandalone() {
   animation: pop-in 0.35s ease;
 }
 @keyframes pop-in {
-  0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
-  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  0% {
+    transform: translateX(-50%) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
 }
 .reward-gift {
   font-size: 40px;

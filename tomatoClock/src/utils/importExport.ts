@@ -35,9 +35,18 @@ export function sanitize(raw: unknown): ImportResult {
   const habits: Habit[] = []
   for (const item of data.habits) {
     const h = item as Partial<Habit> | null
-    if (!h || typeof h !== 'object') { skipped.habits++; continue }
-    if (typeof h.id !== 'string') { skipped.habits++; continue }
-    if (typeof h.name !== 'string' || !h.name.trim()) { skipped.habits++; continue }
+    if (!h || typeof h !== 'object') {
+      skipped.habits++
+      continue
+    }
+    if (typeof h.id !== 'string') {
+      skipped.habits++
+      continue
+    }
+    if (typeof h.name !== 'string' || !h.name.trim()) {
+      skipped.habits++
+      continue
+    }
     habits.push(normalizeHabit(h as Partial<Habit> & { id: string; name: string }))
   }
 
@@ -45,15 +54,22 @@ export function sanitize(raw: unknown): ImportResult {
   const sessions: Session[] = []
   for (const item of data.sessions) {
     const s = item as Partial<Session> | null
-    if (!s || typeof s !== 'object') { skipped.sessions++; continue }
-    if (typeof s.ts !== 'number' || !Number.isFinite(s.ts) || s.ts <= 0) { skipped.sessions++; continue }
+    if (!s || typeof s !== 'object') {
+      skipped.sessions++
+      continue
+    }
+    if (typeof s.ts !== 'number' || !Number.isFinite(s.ts) || s.ts <= 0) {
+      skipped.sessions++
+      continue
+    }
     if (
       typeof s.minutes !== 'number' ||
       !Number.isFinite(s.minutes) ||
       s.minutes <= 0 ||
       s.minutes > 1440
     ) {
-      skipped.sessions++; continue
+      skipped.sessions++
+      continue
     }
     sessions.push(
       normalizeSession(s as Partial<Session> & { id: string; minutes: number; ts: number })
@@ -85,13 +101,18 @@ export function sanitize(raw: unknown): ImportResult {
   if (present.tasks) {
     for (const item of data.tasks as unknown[]) {
       const t = item as Partial<Task> | null
-      if (!t || typeof t !== 'object') { skipped.tasks++; continue }
-      if (typeof t.id !== 'string') { skipped.tasks++; continue }
+      if (!t || typeof t !== 'object') {
+        skipped.tasks++
+        continue
+      }
+      if (typeof t.id !== 'string') {
+        skipped.tasks++
+        continue
+      }
       tasks.push(normalizeTask(t as Partial<Task> & { id: string; name: string }))
     }
   }
-  const pomoCycle =
-    typeof data.pomoCycle === 'number' && data.pomoCycle >= 0 ? data.pomoCycle : 0
+  const pomoCycle = typeof data.pomoCycle === 'number' && data.pomoCycle >= 0 ? data.pomoCycle : 0
   const activeTaskId =
     data.activeTaskId === null || typeof data.activeTaskId === 'string'
       ? (data.activeTaskId as string | null)

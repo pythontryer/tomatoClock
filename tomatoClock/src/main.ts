@@ -11,9 +11,12 @@ app.use(pinia)
 
 // 状态自动持久化：任意深层变更都写入 localStorage
 const store = useAppStore(pinia)
-store.$subscribe((_mutation, state) => {
-  saveState(state)
-}, { deep: true })
+store.$subscribe(
+  (_mutation, state) => {
+    saveState(state)
+  },
+  { deep: true }
+)
 
 app.mount('#app')
 

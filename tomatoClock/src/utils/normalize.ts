@@ -9,9 +9,7 @@ import { DEFAULT_COMPANION_NAME } from '@/constants'
 
 const HABIT_FREQS: HabitFreq[] = ['daily', 'weekly', 'monthly', 'custom']
 
-export function normalizeHabit(
-  h: Partial<Habit> & { id: string; name: string }
-): Habit {
+export function normalizeHabit(h: Partial<Habit> & { id: string; name: string }): Habit {
   const freq: HabitFreq = HABIT_FREQS.includes(h.freq as HabitFreq)
     ? (h.freq as HabitFreq)
     : 'daily'
@@ -23,9 +21,7 @@ export function normalizeHabit(
     name: h.name.trim(),
     color: typeof h.color === 'string' && h.color ? h.color : '#5b6cff',
     createdAt:
-      typeof h.createdAt === 'number' && Number.isFinite(h.createdAt)
-        ? h.createdAt
-        : Date.now(),
+      typeof h.createdAt === 'number' && Number.isFinite(h.createdAt) ? h.createdAt : Date.now(),
     freq,
     freqDays,
     remindAt: typeof h.remindAt === 'string' ? h.remindAt : null
@@ -71,9 +67,7 @@ export function defaultCompanion(): CompanionState {
  * 归一化陪伴角色状态。只补默认、不抛错；已解锁列表与当前选用项都会回退到合法默认值，
  * 避免导入/老备份里指向已不存在的装饰 id 导致界面取不到数据。
  */
-export function normalizeCompanion(
-  c: Partial<CompanionState> | null | undefined
-): CompanionState {
+export function normalizeCompanion(c: Partial<CompanionState> | null | undefined): CompanionState {
   const d = defaultCompanion()
   if (!c || typeof c !== 'object') return d
   const unlocked = Array.isArray(c.unlocked)
@@ -93,8 +87,7 @@ export function normalizeCompanion(
       ? c.activeCelebration
       : d.activeCelebration
   return {
-    name:
-      typeof c.name === 'string' && c.name.trim() ? c.name.trim().slice(0, 16) : d.name,
+    name: typeof c.name === 'string' && c.name.trim() ? c.name.trim().slice(0, 16) : d.name,
     coins: typeof c.coins === 'number' && c.coins >= 0 ? Math.floor(c.coins) : 0,
     unlocked,
     activeCompanion,

@@ -94,8 +94,10 @@ function dayLabel(d: { day: string }, i: number) {
       </div>
     </div>
     <div class="summary muted">
-      近 {{ range }} 天合计 <b>{{ rangeTotal }}</b>{{ unit }} · 日均 <b>{{ rangeAvg }}</b
-      >{{ unit }} · 达标 <b>{{ daysHit }}</b>/{{ range }} 天
+      近 {{ range }} 天合计 <b>{{ rangeTotal }}</b
+      >{{ unit }} · 日均 <b>{{ rangeAvg }}</b
+      >{{ unit }} · 达标 <b>{{ daysHit }}</b
+      >/{{ range }} 天
     </div>
   </div>
 </template>

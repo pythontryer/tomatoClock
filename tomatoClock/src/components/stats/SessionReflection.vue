@@ -35,7 +35,9 @@ function fmt(ts: number): string {
           class="star"
           :class="{ on: n <= (s.rating || 0) }"
           @click="store.reflect(s.id, n, s.note || '')"
-        >★</button>
+        >
+          ★
+        </button>
         <span class="muted sm">{{ s.rating ? s.rating + ' 分' : '未评' }}</span>
       </div>
 

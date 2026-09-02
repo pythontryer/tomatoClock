@@ -9,6 +9,9 @@ import {
   PLANT_BLOOM_STAGE
 } from '@/constants'
 
+// 组件名必须多词（ESLint vue/multi-word-component-names），文件名保持 Companion.vue 不变
+defineOptions({ name: 'PlantCompanion' })
+
 const props = defineProps<{
   mood: CompanionMood
   /** 植物形态 id（多肉/薄荷/薰衣草/向日葵…） */
@@ -49,8 +52,13 @@ const particle = computed(() => props.celebration || '🎉')
 </script>
 
 <template>
-  <div class="companion" :class="mood" @click="emit('tend')" role="img"
-    :aria-label="`专注植物 ${name || '小绿'}（阶段 ${stage + 1}，状态 ${mood}）`">
+  <div
+    class="companion"
+    :class="mood"
+    role="img"
+    :aria-label="`专注植物 ${name || '小绿'}（阶段 ${stage + 1}，状态 ${mood}）`"
+    @click="emit('tend')"
+  >
     <div class="particles">
       <span
         v-for="i in particles"
@@ -92,7 +100,7 @@ const particle = computed(() => props.celebration || '🎉')
       </g>
     </svg>
 
-    <div class="name" v-if="name">{{ name }}</div>
+    <div v-if="name" class="name">{{ name }}</div>
   </div>
 </template>
 
@@ -142,17 +150,33 @@ const particle = computed(() => props.celebration || '🎉')
   animation: droop 0.5s ease;
 }
 @keyframes sway {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(2.5deg); }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
 }
 @keyframes pop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 @keyframes droop {
-  0%, 100% { transform: rotate(0); }
-  50% { transform: rotate(-4deg); }
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(-4deg);
+  }
 }
 
 /* 庆祝粒子 */
@@ -169,9 +193,17 @@ const particle = computed(() => props.celebration || '🎉')
   opacity: 0;
 }
 @keyframes floatUp {
-  0% { transform: translateY(0) scale(0.6); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translateY(-46px) scale(1.1); opacity: 0; }
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-46px) scale(1.1);
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
