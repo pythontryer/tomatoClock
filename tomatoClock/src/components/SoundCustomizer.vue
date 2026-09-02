@@ -5,7 +5,7 @@ import { useSound } from '@/composables/useSound'
 import { SOUND_OPTIONS } from '@/constants'
 
 const store = useAppStore()
-const { previewSound } = useSound()
+const { previewSound, playingCustomId, toggleCustom } = useSound()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const msg = ref<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -66,6 +66,19 @@ function onFileChange(e: Event) {
 }
 
 // ---------- 录音 ----------
+/** 录音按钮点击：区分开始/停止，给出即时反馈 */
+function onRecordClick() {
+  if (recording.value) {
+    stopRecording()
+    return
+  }
+  if (!canAdd.value) {
+    showMsg('err', `最多保存 ${MAX_CUSTOM} 个自定义提示音，请先删除一个`)
+    return
+  }
+  startRecording()
+}
+
 /** 检测浏览器支持的录音格式，返回可用的 mimeType */
 function getSupportedMimeType(): string {
   const candidates = [
@@ -84,10 +97,6 @@ function getSupportedMimeType(): string {
 }
 
 async function startRecording() {
-  if (!canAdd.value) {
-    showMsg('err', `最多保存 ${MAX_CUSTOM} 个自定义提示音，请先删除一个`)
-    return
-  }
   if (typeof MediaRecorder === 'undefined') {
     showMsg('err', '当前浏览器不支持录音功能，请使用 Chrome、Edge 或 Firefox')
     return
@@ -96,6 +105,7 @@ async function startRecording() {
     showMsg('err', '无法访问麦克风设备，请确认浏览器已授权麦克风权限')
     return
   }
+  showMsg('ok', '🎤 正在请求麦克风权限，请在浏览器弹窗中点击「允许」…')
   try {
     recordStream = await navigator.mediaDevices.getUserMedia({ audio: true })
     recordChunks = []
@@ -181,8 +191,14 @@ function cleanupRecording() {
 }
 
 // ---------- 预览/选用/删除 ----------
+/** 试听/暂停切换：播放中则暂停，否则播放 */
 function preview(id: string) {
-  previewSound(id)
+  toggleCustom(id)
+}
+
+/** 试听预设提示音（WebAudio 合成音，不支持暂停） */
+function previewPreset(type: string) {
+  previewSound(type)
 }
 
 function selectSound(id: string) {
@@ -215,16 +231,21 @@ function removeSound(id: string) {
           <option v-for="s in store.settings.customSounds" :key="s.id" :value="s.id">{{ s.name }}</option>
         </optgroup>
       </select>
-      <button class="btn small" @click="preview(store.settings.soundType)">试听</button>
+      <button
+        class="btn small"
+        @click="store.settings.soundType.startsWith('custom-') ? preview(store.settings.soundType) : previewPreset(store.settings.soundType)"
+      >
+        {{ store.settings.soundType.startsWith('custom-') && playingCustomId === store.settings.soundType ? '⏸ 暂停' : '▶ 试听' }}
+      </button>
     </div>
 
     <!-- 上传和录音 -->
     <div class="actions">
-      <button class="btn" :disabled="!canAdd" @click="pickFile">📁 上传音频</button>
+      <button class="btn" @click="pickFile">📁 上传音频</button>
       <button
         class="btn"
-        :class="{ recording: recording }"
-        @click="recording ? stopRecording : startRecording"
+        :class="{ recording: recording, disabled: !canAdd && !recording }"
+        @click="onRecordClick"
       >
         {{ recording ? `⏹ 停止录音 (${recordSeconds}s)` : '🎙 录音' }}
       </button>
@@ -237,13 +258,16 @@ function removeSound(id: string) {
       />
     </div>
     <p v-if="recording" class="recording-hint">正在录音…最长 15 秒，点击停止保存</p>
+    <p v-else-if="!canAdd" class="recording-hint">已达 5 个自定义提示音上限，请先删除一个再录音</p>
 
     <!-- 自定义提示音列表 -->
     <div v-if="store.settings.customSounds.length" class="custom-list">
       <div v-for="s in store.settings.customSounds" :key="s.id" class="custom-item">
         <span class="custom-name">{{ s.name }}</span>
         <div class="custom-actions">
-          <button class="btn small" @click="preview(s.id)">▶ 试听</button>
+          <button class="btn small" :class="{ playing: playingCustomId === s.id }" @click="preview(s.id)">
+            {{ playingCustomId === s.id ? '⏸ 暂停' : '▶ 试听' }}
+          </button>
           <button
             v-if="store.settings.soundType !== s.id"
             class="btn small primary"
@@ -306,6 +330,14 @@ function removeSound(id: string) {
   background: linear-gradient(135deg, #ff6b6b, #ffae42);
   color: #fff;
   animation: pulse 1s infinite;
+}
+.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn.playing {
+  background: linear-gradient(135deg, #2bbf8a, #1fb6d6);
+  color: #fff;
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }

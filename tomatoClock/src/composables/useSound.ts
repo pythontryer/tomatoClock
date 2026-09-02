@@ -1,4 +1,4 @@
-import { onUnmounted } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { SOUND_PROFILES, type SoundProfile } from '@/constants'
 import type { SoundType } from '@/types/models'
@@ -7,11 +7,22 @@ import type { SoundType } from '@/types/models'
 let audioCtx: AudioContext | null = null
 // 自定义提示音用 HTMLAudioElement 播放 base64
 let audioEl: HTMLAudioElement | null = null
+// 当前正在播放的自定义提示音 id（null=未播放）
+const playingCustomId = ref<string | null>(null)
 
 function getAudioEl(): HTMLAudioElement {
   if (!audioEl) {
     audioEl = new Audio()
     audioEl.preload = 'auto'
+    audioEl.onended = () => {
+      playingCustomId.value = null
+    }
+    audioEl.onpause = () => {
+      // 自然结束时 onended 会先触发；手动暂停时清除状态
+      if (audioEl && audioEl.currentTime > 0 && !audioEl.ended) {
+        playingCustomId.value = null
+      }
+    }
   }
   return audioEl
 }
@@ -29,10 +40,28 @@ export function useSound() {
       el.src = sound.data
       el.currentTime = 0
       el.play().catch(() => {})
+      playingCustomId.value = customId
       return true
     } catch {
       return false
     }
+  }
+
+  /** 暂停当前播放的自定义提示音 */
+  function pauseCustom() {
+    if (audioEl) {
+      audioEl.pause()
+    }
+    playingCustomId.value = null
+  }
+
+  /** 切换播放/暂停：播放中则暂停，否则播放指定提示音 */
+  function toggleCustom(customId: string): boolean {
+    if (playingCustomId.value === customId && audioEl && !audioEl.paused) {
+      pauseCustom()
+      return false
+    }
+    return playCustom(customId)
   }
 
   async function ensureAudio(): Promise<AudioContext | null> {
@@ -130,5 +159,5 @@ export function useSound() {
     }
   })
 
-  return { ensureAudio, playChime, previewSound, unlockAudio }
+  return { ensureAudio, playChime, previewSound, unlockAudio, playingCustomId, pauseCustom, toggleCustom }
 }
