@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+import router from './router'
 import { useAppStore } from '@/stores/useAppStore'
 import { saveState } from '@/stores/persistence'
 import './style.css'
@@ -8,6 +9,7 @@ import './style.css'
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
+app.use(router)
 
 // 状态自动持久化：任意深层变更都写入 localStorage
 const store = useAppStore(pinia)

@@ -16,7 +16,8 @@
   "dependencies": {
     "@vue/devtools-api": "^8.2.1",
     "pinia": "^4.0.3",
-    "vue": "^3.4.21"
+    "vue": "^3.4.21",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

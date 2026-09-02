@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { watch } from 'vue'
-import PomodoroTimer from './components/PomodoroTimer.vue'
-import HabitList from './components/HabitList.vue'
-import StatsPanel from './components/StatsPanel.vue'
-import DataManager from './components/DataManager.vue'
-import TaskBoard from './components/TaskBoard.vue'
-import CompanionShop from './components/CompanionShop.vue'
+import { watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import BottomNav from './components/BottomNav.vue'
 import ToastHost from './components/ToastHost.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useHabitReminders } from '@/composables/useHabitReminders'
 
 const store = useAppStore()
+const route = useRoute()
 useHabitReminders()
 
 // 主题应用到根元素；导入旧备份缺 theme 键时回退亮色
@@ -25,13 +22,22 @@ watch(
 function toggleTheme() {
   store.settings.theme = store.settings.theme === 'dark' ? 'light' : 'dark'
 }
+
+const pageTitle = computed(() => {
+  const titles: Record<string, string> = {
+    focus: '🍅 专注',
+    stats: '📊 数据统计',
+    garden: '🌱 专注小园',
+    settings: '⚙️ 设置'
+  }
+  return titles[route.name as string] || '专注与习惯面板'
+})
 </script>
 
 <template>
   <div class="app">
     <header class="topbar">
-      <div class="brand">🎯 专注与习惯面板</div>
-      <div class="sub muted">本地数据 · 自动保存</div>
+      <div class="brand">{{ pageTitle }}</div>
       <button
         class="theme-toggle"
         :title="store.settings.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
@@ -41,15 +47,15 @@ function toggleTheme() {
       </button>
     </header>
 
-    <main class="grid">
-      <PomodoroTimer class="cell timer-cell" />
-      <TaskBoard class="cell" />
-      <HabitList class="cell" />
-      <StatsPanel class="cell stats-cell" />
-      <DataManager class="cell stats-cell" />
-      <CompanionShop class="cell stats-cell" />
+    <main class="content">
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
 
+    <BottomNav />
     <ToastHost />
   </div>
 </template>
@@ -58,34 +64,14 @@ function toggleTheme() {
 .app {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 28px 20px 48px;
+  padding: 16px 20px 80px;
+  min-height: 100vh;
 }
 .topbar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  background: var(--card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--card-border);
-}
-.theme-toggle {
-  margin-left: auto;
-  align-self: center;
-  font-size: 18px;
-  line-height: 1;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  border: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-.theme-toggle:hover {
-  transform: scale(1.1) rotate(15deg);
-  box-shadow: var(--shadow-sm);
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 .brand {
   font-size: 20px;
@@ -96,34 +82,39 @@ function toggleTheme() {
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
 }
-.sub {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 500;
+.theme-toggle {
+  font-size: 18px;
+  line-height: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+.theme-toggle:hover {
+  transform: scale(1.1) rotate(15deg);
 }
-.timer-cell {
-  grid-row: span 2;
+.content {
+  min-height: calc(100vh - 140px);
 }
-.stats-cell {
-  grid-column: 1 / -1;
+/* 页面切换动画 */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.cell :deep(.card) {
-  height: 100%;
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
 }
-@media (max-width: 760px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .timer-cell {
-    grid-row: auto;
-  }
-  .stats-cell {
-    grid-column: auto;
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+@media (min-width: 768px) {
+  .app {
+    padding-bottom: 20px;
   }
 }
 </style>
