@@ -10,6 +10,7 @@ import TaskEstimateVariance from '@/components/stats/TaskEstimateVariance.vue'
 import TrendChart from '@/components/stats/TrendChart.vue'
 import SessionReflection from '@/components/stats/SessionReflection.vue'
 import LogSession from '@/components/stats/LogSession.vue'
+import FocusHeatmap from '@/components/stats/FocusHeatmap.vue'
 import type { Habit, Session, Task } from '@/types/models'
 
 let pinia: Pinia
@@ -400,5 +401,52 @@ describe('LogSession', () => {
     await input.trigger('keyup.enter')
     expect(store.sessions).toHaveLength(1)
     expect(store.sessions[0].minutes).toBe(45)
+  })
+})
+
+describe('FocusHeatmap', () => {
+  it('网格为 14 周 × 7 天 = 98 个 cell', () => {
+    const wrapper = mount(FocusHeatmap, { global: { plugins: [pinia] } })
+    expect(wrapper.findAll('.week')).toHaveLength(14)
+    expect(wrapper.findAll('.week .cell')).toHaveLength(98)
+  })
+
+  it('空数据时所有网格 cell 为 lv0', () => {
+    const wrapper = mount(FocusHeatmap, { global: { plugins: [pinia] } })
+    const cells = wrapper.findAll('.week .cell')
+    expect(cells.every((c) => c.classes().includes('lv0'))).toBe(true)
+  })
+
+  it('未来日期标记 future 类', () => {
+    const wrapper = mount(FocusHeatmap, { global: { plugins: [pinia] } })
+    const futureCells = wrapper.findAll('.cell.future')
+    // 至少有一些未来日期（本周剩余天数 + 后续周）
+    expect(futureCells.length).toBeGreaterThan(0)
+    // 未来日期的 title 应为"未到"
+    expect(futureCells[0].attributes('title')).toBe('未到')
+  })
+
+  it('有专注记录的日期对应 level 分级', () => {
+    const store = useAppStore()
+    // 今天 30 分钟 → lv2 (25 < 30 <= 60)
+    store.sessions.push(sessionToday(30))
+    const wrapper = mount(FocusHeatmap, { global: { plugins: [pinia] } })
+    // 找到今天对应的 cell（非 future，且 title 包含今天日期）
+    const today = todayKey()
+    const todayCell = wrapper
+      .findAll('.cell')
+      .find((c) => !c.classes().includes('future') && (c.attributes('title') || '').includes(today))
+    expect(todayCell).toBeDefined()
+    expect(todayCell!.classes()).toContain('lv2')
+    expect(todayCell!.attributes('title')).toContain('30 分')
+  })
+
+  it('汇总统计正确', () => {
+    const store = useAppStore()
+    store.sessions.push(sessionToday(25), sessionPast(50, 1))
+    const wrapper = mount(FocusHeatmap, { global: { plugins: [pinia] } })
+    const title = wrapper.find('.title').text()
+    expect(title).toContain('共 75 分')
+    expect(title).toContain('/ 2 🍅')
   })
 })
