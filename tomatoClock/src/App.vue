@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { watch, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { watch } from 'vue'
 import BottomNav from './components/BottomNav.vue'
 import ToastHost from './components/ToastHost.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useHabitReminders } from '@/composables/useHabitReminders'
 
 const store = useAppStore()
-const route = useRoute()
 useHabitReminders()
 
 // 主题应用到根元素；导入旧备份缺 theme 键时回退亮色
@@ -22,22 +20,15 @@ watch(
 function toggleTheme() {
   store.settings.theme = store.settings.theme === 'dark' ? 'light' : 'dark'
 }
-
-const pageTitle = computed(() => {
-  const titles: Record<string, string> = {
-    focus: '🍅 专注',
-    stats: '📊 数据统计',
-    garden: '🌱 专注小园',
-    settings: '⚙️ 设置'
-  }
-  return titles[route.name as string] || '专注与习惯面板'
-})
 </script>
 
 <template>
   <div class="app">
     <header class="topbar">
-      <div class="brand">{{ pageTitle }}</div>
+      <div class="brand">
+        <span class="brand-icon">🎯</span>
+        <span class="brand-text">专注与习惯</span>
+      </div>
       <button
         class="theme-toggle"
         :title="store.settings.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
@@ -71,10 +62,18 @@ const pageTitle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .brand {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-icon {
+  font-size: 22px;
+}
+.brand-text {
+  font-size: 18px;
   font-weight: 800;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
@@ -83,10 +82,10 @@ const pageTitle = computed(() => {
   letter-spacing: -0.5px;
 }
 .theme-toggle {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
   background: var(--card);
   border: 1px solid var(--card-border);
   box-shadow: var(--shadow-sm);

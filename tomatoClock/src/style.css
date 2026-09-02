@@ -121,6 +121,82 @@ textarea {
   line-height: 1.6;
 }
 
+/* 统一页面标题 */
+.page-header {
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 4px;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* 统一设置行 */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child {
+  border-bottom: none;
+}
+.setting-info {
+  flex: 1;
+}
+.setting-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+.setting-desc {
+  font-size: 12px;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+/* 统一开关按钮 */
+.switch-toggle {
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.switch-toggle.on {
+  background: var(--accent-gradient);
+}
+.switch-toggle .knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.switch-toggle.on .knob {
+  transform: translateX(20px);
+}
+
 .card {
   background: var(--card);
   border-radius: var(--radius);

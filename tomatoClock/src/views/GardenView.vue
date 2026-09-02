@@ -14,13 +14,13 @@ const stageName = computed(() => stageNames[stage.value] || '绽放')
 
 <template>
   <div class="garden-view">
+    <div class="page-header">
+      <h1 class="page-title">专注小园</h1>
+      <p class="page-subtitle">每完成 4 个番茄，小园就会成长一个阶段</p>
+    </div>
+
     <!-- 大号植物展示区 -->
     <section class="card garden-hero">
-      <div class="hero-header">
-        <h2>🌱 我的专注小园</h2>
-        <div class="stage-badge">阶段：{{ stageName }}</div>
-      </div>
-
       <div class="hero-plant">
         <Companion
           mood="idle"
@@ -29,6 +29,11 @@ const stageName = computed(() => stageNames[stage.value] || '绽放')
           celebration=""
           :name="store.companion.name"
         />
+      </div>
+
+      <div class="stage-badge">
+        <span class="stage-label">当前阶段</span>
+        <span class="stage-name">{{ stageName }}</span>
       </div>
 
       <div class="hero-stats">
@@ -45,8 +50,6 @@ const stageName = computed(() => stageNames[stage.value] || '绽放')
           <div class="stat-label">专注记录</div>
         </div>
       </div>
-
-      <p class="hero-tip muted">每完成 4 个番茄，小园就会成长一个阶段~</p>
     </section>
 
     <!-- 商店和自定义 -->
@@ -63,64 +66,61 @@ const stageName = computed(() => stageNames[stage.value] || '绽放')
 }
 .garden-hero {
   text-align: center;
-}
-.hero-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.hero-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
-.stage-badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  padding: 28px 22px;
 }
 .hero-plant {
-  padding: 20px 0;
+  padding: 8px 0 16px;
   display: flex;
   justify-content: center;
 }
 .hero-plant :deep(.companion) {
-  width: 180px;
+  width: 160px;
+}
+.stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  margin-bottom: 18px;
+}
+.stage-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.stage-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
 }
 .hero-stats {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin: 16px 0;
-  padding: 16px;
-  background: var(--accent-soft);
+  gap: 28px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, var(--accent-soft), rgba(139, 92, 246, 0.05));
   border-radius: var(--radius-sm);
 }
 .stat {
   text-align: center;
 }
 .stat-val {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: 4px;
   font-weight: 500;
-}
-.hero-tip {
-  font-size: 12px;
-  margin: 0;
 }
 @media (max-width: 480px) {
   .hero-stats {

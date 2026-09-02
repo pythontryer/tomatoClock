@@ -6,6 +6,11 @@ import HabitList from '@/components/HabitList.vue'
 
 <template>
   <div class="focus-view">
+    <div class="page-header">
+      <h1 class="page-title">今日专注</h1>
+      <p class="page-subtitle">设定目标，开始你的番茄工作法</p>
+    </div>
+
     <div class="focus-grid">
       <PomodoroTimer class="cell timer-cell" />
       <TaskBoard class="cell" />

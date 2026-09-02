@@ -46,15 +46,16 @@ const navItems = [
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 16px;
-  border-radius: 12px;
+  padding: 8px 20px;
+  border-radius: 14px;
   text-decoration: none;
   color: var(--muted);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 .nav-item.active {
   color: var(--accent);
+  background: var(--accent-soft);
 }
 .nav-item.active::before {
   content: '';
@@ -62,7 +63,7 @@ const navItems = [
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 24px;
+  width: 20px;
   height: 3px;
   background: var(--accent-gradient);
   border-radius: 0 0 3px 3px;
@@ -70,14 +71,14 @@ const navItems = [
 .nav-icon {
   font-size: 22px;
   line-height: 1;
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .nav-item.active .nav-icon {
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 .nav-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
 }
 @media (min-width: 768px) {
   .bottom-nav {
