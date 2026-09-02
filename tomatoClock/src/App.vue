@@ -55,7 +55,7 @@ function toggleTheme() {
 .app {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 16px 20px 80px;
+  padding: 70px 20px 40px;
   min-height: 100vh;
 }
 .topbar {
@@ -110,10 +110,5 @@ function toggleTheme() {
 .page-leave-to {
   opacity: 0;
   transform: translateY(-8px);
-}
-@media (min-width: 768px) {
-  .app {
-    padding-bottom: 20px;
-  }
 }
 </style>

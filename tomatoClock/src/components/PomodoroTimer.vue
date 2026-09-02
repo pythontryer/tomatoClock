@@ -62,9 +62,17 @@ function showMiss() {
   missTimer = setTimeout(() => (missMsg.value = null), 4000)
 }
 function onTend() {
-  tendMsg.value = '🌱 谢谢你的照料~'
+  const ok = store.tendCompanion()
   clearTimers()
-  tendTimer = setTimeout(() => (tendMsg.value = null), 1800)
+  if (ok) {
+    tendMsg.value = '💧 浇水成功！小绿很开心~'
+    // 触发开心状态：展示水滴粒子效果
+    reward.value = { gift: '💧', coins: 0 }
+    rewardTimer = setTimeout(() => (reward.value = null), 1500)
+  } else {
+    tendMsg.value = '💧 露珠不足，完成专注获取更多露珠吧'
+  }
+  tendTimer = setTimeout(() => (tendMsg.value = null), ok ? 1800 : 2500)
 }
 
 /** 放弃当前专注（仅在专注进行中点击重置才算“提前退出”，给温和提示；暂停后重置不算） */

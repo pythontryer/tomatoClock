@@ -1,9 +1,31 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import DataManager from '@/components/DataManager.vue'
 import TimerSettings from '@/components/timer/TimerSettings.vue'
 import { useAppStore } from '@/stores/useAppStore'
+import { useNotification } from '@/composables/useNotification'
 
 const store = useAppStore()
+const { notifPerm, requestNotify } = useNotification()
+
+const notifStatus = ref('')
+
+async function toggleNotify() {
+  store.settings.notify = !store.settings.notify
+  if (store.settings.notify && notifPerm.value === 'default') {
+    notifStatus.value = '正在申请通知权限…'
+    const result = await requestNotify()
+    notifStatus.value =
+      result === 'granted'
+        ? '✅ 通知已开启'
+        : result === 'denied'
+          ? '❌ 通知被拒绝，请在浏览器设置中允许'
+          : '⚠️ 未选择，可再次点击开启'
+    setTimeout(() => (notifStatus.value = ''), 4000)
+  } else {
+    notifStatus.value = ''
+  }
+}
 </script>
 
 <template>
@@ -35,11 +57,12 @@ const store = useAppStore()
         <div class="setting-info">
           <div class="setting-title">桌面通知</div>
           <div class="setting-desc">番茄结束时弹出系统通知</div>
+          <div v-if="notifStatus" class="notif-status">{{ notifStatus }}</div>
         </div>
         <button
           class="switch-toggle"
           :class="{ on: store.settings.notify }"
-          @click="store.settings.notify = !store.settings.notify"
+          @click="toggleNotify"
         >
           <span class="knob" />
         </button>
@@ -99,5 +122,11 @@ const store = useAppStore()
   line-height: 1.8;
   margin: 12px 0 0;
   color: var(--muted);
+}
+.notif-status {
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--accent);
+  font-weight: 500;
 }
 </style>

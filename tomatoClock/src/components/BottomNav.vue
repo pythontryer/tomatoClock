@@ -29,79 +29,67 @@ const navItems = [
 <style scoped>
 .bottom-nav {
   position: fixed;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
+  gap: 8px;
   background: var(--card);
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  padding: 8px 16px calc(8px + env(safe-area-inset-top, 0px));
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
   z-index: 100;
+  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
 }
 .nav-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
-  padding: 8px 20px;
-  border-radius: 14px;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 12px;
   text-decoration: none;
   color: var(--muted);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  font-size: 13px;
 }
 .nav-item.active {
   color: var(--accent);
   background: var(--accent-soft);
-}
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 3px;
-  background: var(--accent-gradient);
-  border-radius: 0 0 3px 3px;
+  font-weight: 700;
 }
 .nav-icon {
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .nav-item.active .nav-icon {
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 .nav-label {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
-@media (min-width: 768px) {
+@media (max-width: 480px) {
   .bottom-nav {
-    position: sticky;
-    bottom: auto;
-    top: 0;
-    border-top: none;
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-    padding: 10px 0;
+    gap: 4px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-top, 0px));
+    padding-top: calc(6px + env(safe-area-inset-top, 0px));
   }
   .nav-item {
-    flex-direction: row;
-    gap: 8px;
-    padding: 8px 20px;
-  }
-  .nav-item.active::before {
-    top: auto;
-    bottom: 0;
-    border-radius: 3px 3px 0 0;
+    padding: 6px 12px;
+    gap: 4px;
   }
   .nav-label {
-    font-size: 13px;
+    font-size: 12px;
+  }
+  .nav-icon {
+    font-size: 16px;
   }
 }
 </style>

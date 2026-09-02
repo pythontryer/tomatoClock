@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import Companion from '@/components/Companion.vue'
 import CompanionShop from '@/components/CompanionShop.vue'
 import { useAppStore } from '@/stores/useAppStore'
@@ -10,6 +10,17 @@ const store = useAppStore()
 const stage = computed(() => plantStage(store.pomoCycle))
 const stageNames = ['种子', '发芽', '成长', '绽放']
 const stageName = computed(() => stageNames[stage.value] || '绽放')
+
+// 浇水反馈
+const tendMsg = ref<string | null>(null)
+let tendTimer: ReturnType<typeof setTimeout> | null = null
+
+function onTend() {
+  const ok = store.tendCompanion()
+  if (tendTimer) clearTimeout(tendTimer)
+  tendMsg.value = ok ? '💧 浇水成功！小绿很开心~' : '💧 露珠不足，完成专注获取更多露珠吧'
+  tendTimer = setTimeout(() => (tendMsg.value = null), ok ? 1800 : 2500)
+}
 </script>
 
 <template>
@@ -28,8 +39,13 @@ const stageName = computed(() => stageNames[stage.value] || '绽放')
           :stage="stage"
           celebration=""
           :name="store.companion.name"
+          @tend="onTend"
         />
       </div>
+
+      <transition name="fade">
+        <div v-if="tendMsg" class="tend-msg">{{ tendMsg }}</div>
+      </transition>
 
       <div class="stage-badge">
         <span class="stage-label">当前阶段</span>
@@ -75,6 +91,25 @@ const stageName = computed(() => stageNames[stage.value] || '绽放')
 }
 .hero-plant :deep(.companion) {
   width: 160px;
+}
+.tend-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 14px;
+  padding: 6px 14px;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  display: inline-block;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 .stage-badge {
   display: inline-flex;

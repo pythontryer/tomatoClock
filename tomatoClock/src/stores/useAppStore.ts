@@ -161,6 +161,13 @@ export const useAppStore = defineStore('app', {
       else this.companion.failMsg = t
     },
 
+    /** 给植物浇水：消耗 1 滴专注露珠，返回是否成功（余额不足返回 false） */
+    tendCompanion(): boolean {
+      if (this.companion.coins < 1) return false
+      this.companion.coins -= 1
+      return true
+    },
+
     // ---------- 导入 ----------
     overwrite(data: SanitizedData) {
       this.habits = data.habits
