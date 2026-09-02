@@ -279,18 +279,54 @@ function openStandalone() {
 
     <div class="ring-wrap">
       <svg class="ring" viewBox="0 0 280 280">
+        <defs>
+          <linearGradient id="grad-focus" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#5b6cff" />
+            <stop offset="100%" stop-color="#8b5cf6" />
+          </linearGradient>
+          <linearGradient id="grad-break" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#2bbf8a" />
+            <stop offset="100%" stop-color="#1fb6d6" />
+          </linearGradient>
+          <linearGradient id="grad-long" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffae42" />
+            <stop offset="100%" stop-color="#ff6b6b" />
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <!-- 背景环 -->
         <circle class="ring-bg" cx="140" cy="140" :r="R" />
+        <!-- 进度环发光层 -->
+        <circle
+          v-if="progress > 0"
+          class="ring-glow"
+          cx="140"
+          cy="140"
+          :r="R"
+          :stroke="`url(#grad-${mode})`"
+          :stroke-dasharray="C"
+          :stroke-dashoffset="C * (1 - progress)"
+          filter="url(#glow)"
+        />
+        <!-- 进度环主层 -->
         <circle
           class="ring-fg"
           cx="140"
           cy="140"
           :r="R"
+          :stroke="`url(#grad-${mode})`"
           :stroke-dasharray="C"
           :stroke-dashoffset="C * (1 - progress)"
         />
       </svg>
       <div class="ring-center">
-        <div class="time">{{ display }}</div>
+        <div class="time" :class="`time-${mode}`">{{ display }}</div>
         <div class="state-label muted">
           {{ mode === 'focus' ? '专注中' : mode === 'long' ? '长休息中' : '休息中' }}
         </div>
@@ -383,24 +419,33 @@ function openStandalone() {
 }
 .modes {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 14px;
+  background: var(--accent-soft);
+  padding: 4px;
+  border-radius: 999px;
 }
 .mode {
-  padding: 6px 18px;
+  padding: 7px 20px;
   border-radius: 999px;
   font-size: 13px;
-  background: var(--accent-soft);
+  font-weight: 600;
   color: var(--muted);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .mode.active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--card);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.mode:hover:not(.active) {
+  color: var(--text);
 }
 .ring-wrap {
   position: relative;
-  width: 240px;
-  height: 240px;
+  width: 260px;
+  height: 260px;
+  margin: 8px 0;
 }
 .ring {
   width: 100%;
@@ -410,12 +455,19 @@ function openStandalone() {
 .ring-bg {
   fill: none;
   stroke: var(--border);
-  stroke-width: 14;
+  stroke-width: 12;
+  opacity: 0.6;
+}
+.ring-glow {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+  opacity: 0.5;
+  transition: stroke-dashoffset 0.4s linear;
 }
 .ring-fg {
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 14;
+  stroke-width: 12;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.4s linear;
 }
@@ -428,17 +480,37 @@ function openStandalone() {
   justify-content: center;
 }
 .time {
-  font-size: 48px;
-  font-weight: 700;
+  font-size: 52px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+  line-height: 1;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.time-break {
+  background: linear-gradient(135deg, #2bbf8a 0%, #1fb6d6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.time-long {
+  background: linear-gradient(135deg, #ffae42 0%, #ff6b6b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .state-label {
-  font-size: 13px;
-  margin-top: 4px;
+  font-size: 14px;
+  margin-top: 8px;
+  font-weight: 500;
 }
 .cycle {
   font-size: 12px;
-  margin-top: 2px;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
 }
 .controls {
   display: flex;

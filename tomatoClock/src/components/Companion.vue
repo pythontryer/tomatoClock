@@ -70,15 +70,59 @@ const particle = computed(() => props.celebration || '🎉')
     </div>
 
     <svg class="plant" viewBox="0 0 160 160" aria-hidden="true">
-      <g class="plant-body">
+      <defs>
+        <!-- 花盆渐变 -->
+        <linearGradient id="potGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#d98863" />
+          <stop offset="100%" stop-color="#b8623f" />
+        </linearGradient>
+        <linearGradient id="potRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#e89a75" />
+          <stop offset="100%" stop-color="#c9744f" />
+        </linearGradient>
+        <!-- 土壤渐变 -->
+        <radialGradient id="soilGrad" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#6b5240" />
+          <stop offset="100%" stop-color="#4a3828" />
+        </radialGradient>
+        <!-- 茎渐变 -->
+        <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#5a904a" />
+          <stop offset="50%" stop-color="#7ab86a" />
+          <stop offset="100%" stop-color="#5a904a" />
+        </linearGradient>
+        <!-- 叶子渐变 -->
+        <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#8fcf6b" />
+          <stop offset="100%" stop-color="#5aa04a" />
+        </linearGradient>
+        <!-- 花朵渐变 -->
+        <radialGradient id="bloomGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff3c4" />
+          <stop offset="60%" stop-color="#ffd966" />
+          <stop offset="100%" stop-color="#f4a842" />
+        </radialGradient>
+        <!-- 投影 -->
+        <filter id="plantShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.15" />
+        </filter>
+      </defs>
+
+      <g class="plant-body" filter="url(#plantShadow)">
         <!-- 盆 -->
-        <path class="pot" d="M52 118 L108 118 L100 150 L60 150 Z" />
-        <rect class="pot-rim" x="48" y="112" width="64" height="9" rx="3" />
+        <path class="pot" d="M52 118 L108 118 L100 150 L60 150 Z" fill="url(#potGrad)" />
+        <rect class="pot-rim" x="48" y="112" width="64" height="9" rx="3" fill="url(#potRimGrad)" />
+        <!-- 盆高光 -->
+        <path d="M56 120 L60 146 L64 146 L62 120 Z" fill="rgba(255,255,255,0.15)" />
         <!-- 土 -->
-        <ellipse class="soil" cx="80" cy="116" rx="27" ry="5" />
+        <ellipse class="soil" cx="80" cy="116" rx="27" ry="5" fill="url(#soilGrad)" />
+        <!-- 土壤纹理点 -->
+        <circle cx="72" cy="115" r="1" fill="rgba(0,0,0,0.2)" />
+        <circle cx="85" cy="116" r="0.8" fill="rgba(0,0,0,0.15)" />
+        <circle cx="78" cy="114" r="0.6" fill="rgba(255,255,255,0.1)" />
 
         <!-- 茎 -->
-        <rect class="stem" x="78" :y="stemTopY" width="4" :height="stemH" rx="2" :fill="body" />
+        <rect class="stem" x="78" :y="stemTopY" width="4" :height="stemH" rx="2" fill="url(#stemGrad)" />
 
         <!-- 叶 -->
         <g v-for="(lf, idx) in leaves" :key="idx" :class="['leaf', lf.side]">
@@ -87,15 +131,38 @@ const particle = computed(() => props.celebration || '🎉')
             :cy="lf.y"
             rx="13"
             ry="6.5"
-            :fill="body"
+            fill="url(#leafGrad)"
+            :transform="`rotate(${lf.side === 'l' ? -32 : 32} ${lf.side === 'l' ? 78 : 82} ${lf.y})`"
+          />
+          <!-- 叶脉 -->
+          <line
+            :x1="lf.side === 'l' ? 60 : 100"
+            :y1="lf.y"
+            :x2="lf.side === 'l' ? 78 : 82"
+            :y2="lf.y"
+            stroke="rgba(255,255,255,0.3)"
+            stroke-width="0.8"
             :transform="`rotate(${lf.side === 'l' ? -32 : 32} ${lf.side === 'l' ? 78 : 82} ${lf.y})`"
           />
         </g>
 
         <!-- 花（满级绽放） -->
         <g v-if="blooming" class="bloom">
-          <circle :cx="80" :cy="stemTopY - 4" r="9" :fill="body" />
-          <circle :cx="80" :cy="stemTopY - 4" r="4" fill="#fff3c4" />
+          <!-- 花瓣：5片环绕 -->
+          <ellipse
+            v-for="i in 5"
+            :key="i"
+            :cx="80"
+            :cy="stemTopY - 10"
+            rx="5"
+            ry="9"
+            :fill="body"
+            :opacity="0.85"
+            :transform="`rotate(${i * 72} 80 ${stemTopY - 4})`"
+          />
+          <!-- 花心 -->
+          <circle :cx="80" :cy="stemTopY - 4" r="5" fill="url(#bloomGrad)" />
+          <circle :cx="80" :cy="stemTopY - 4" r="2" fill="#fff3c4" />
         </g>
       </g>
     </svg>
@@ -118,19 +185,23 @@ const particle = computed(() => props.celebration || '🎉')
   transform-origin: 50% 100%;
 }
 .pot {
-  fill: #c9744f;
+  /* 渐变填充由 SVG defs 控制 */
 }
 .pot-rim {
-  fill: #d98863;
+  /* 渐变填充由 SVG defs 控制 */
 }
 .soil {
-  fill: #5b4636;
+  /* 渐变填充由 SVG defs 控制 */
 }
 .stem {
-  fill: #6aa05a;
+  /* 渐变填充由 SVG defs 控制 */
 }
 .leaf {
   transform-origin: 80px 116px;
+  transition: transform 0.3s ease;
+}
+.companion:hover .leaf {
+  transform: scale(1.05);
 }
 .name {
   text-align: center;
