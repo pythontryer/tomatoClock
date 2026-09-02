@@ -141,19 +141,32 @@ function cancelImport() {
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 14px;
-  padding: 12px;
-  background: var(--accent-soft);
-  border-radius: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--accent-soft), rgba(139, 92, 246, 0.06));
+  border-radius: var(--radius-sm);
   font-size: 13px;
+  border: 1px solid rgba(91, 108, 255, 0.12);
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .msg {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   font-size: 13px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  animation: slideIn 0.3s ease;
 }
 .msg.ok {
   color: var(--good);
+  background: rgba(43, 191, 138, 0.08);
+  border: 1px solid rgba(43, 191, 138, 0.15);
 }
 .msg.err {
   color: var(--warn);
+  background: rgba(255, 174, 66, 0.08);
+  border: 1px solid rgba(255, 174, 66, 0.15);
 }
 </style>

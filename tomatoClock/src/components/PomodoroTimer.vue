@@ -580,58 +580,84 @@ function openStandalone() {
 }
 .reflect {
   width: 100%;
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card);
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(91, 108, 255, 0.15);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--card), var(--accent-soft));
   text-align: left;
+  box-shadow: var(--shadow);
+  animation: reflectIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes reflectIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .reflect-title {
   font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 6px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .reflect-intent {
   font-size: 12px;
   color: var(--muted);
-  margin: 0 0 8px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  background: var(--card);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
 }
 .stars {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 2px;
+  margin-bottom: 10px;
 }
 .star {
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   background: none;
   border: none;
   color: var(--border);
   cursor: pointer;
-  padding: 0 2px;
+  padding: 0 3px;
+  transition: all 0.15s ease;
+}
+.star:hover {
+  transform: scale(1.2);
 }
 .star.on {
   color: #f5a623;
+  text-shadow: 0 0 10px rgba(245, 166, 35, 0.5);
 }
 .reflect-note {
   width: 100%;
-  min-height: 56px;
+  min-height: 60px;
   resize: vertical;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-family: inherit;
+  background: var(--card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.reflect-note:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91, 108, 255, 0.1);
+  outline: none;
 }
 .reflect-actions {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 .btn.sm {
-  padding: 3px 10px;
+  padding: 6px 14px;
   font-size: 12px;
 }
 .companion-area {
@@ -646,11 +672,13 @@ function openStandalone() {
   right: 0;
   top: 6px;
   font-size: 13px;
-  padding: 2px 9px;
+  font-weight: 700;
+  padding: 5px 12px;
   border-radius: 999px;
-  background: var(--accent-soft);
+  background: linear-gradient(135deg, rgba(91, 108, 255, 0.1), rgba(139, 92, 246, 0.08));
   color: var(--accent);
-  font-weight: 600;
+  border: 1px solid rgba(91, 108, 255, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 .reward-pop {
   position: absolute;
@@ -658,19 +686,22 @@ function openStandalone() {
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
-  width: 220px;
-  padding: 14px 12px;
-  border-radius: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  width: 230px;
+  padding: 18px 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--card) 0%, var(--accent-soft) 100%);
+  border: 1px solid rgba(91, 108, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(91, 108, 255, 0.2), var(--shadow);
   text-align: center;
-  animation: pop-in 0.35s ease;
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes pop-in {
   0% {
-    transform: translateX(-50%) scale(0.8);
+    transform: translateX(-50%) scale(0.7);
     opacity: 0;
+  }
+  60% {
+    transform: translateX(-50%) scale(1.05);
   }
   100% {
     transform: translateX(-50%) scale(1);
@@ -678,20 +709,30 @@ function openStandalone() {
   }
 }
 .reward-gift {
-  font-size: 40px;
+  font-size: 44px;
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  animation: giftBounce 0.6s ease 0.2s both;
+}
+@keyframes giftBounce {
+  0% { transform: scale(0) rotate(-20deg); }
+  60% { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0); }
 }
 .reward-text {
   font-size: 13px;
   color: var(--text);
   line-height: 1.5;
+  font-weight: 500;
 }
 .reward-coins {
-  margin-top: 6px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .miss-hint {
   margin: 6px 0 0;

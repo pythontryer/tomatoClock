@@ -125,39 +125,48 @@ function celebrationChar() {
   margin: 4px 0 10px;
 }
 .balance {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--accent);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(91, 108, 255, 0.08), rgba(139, 92, 246, 0.05));
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .preview {
   display: flex;
   justify-content: center;
-  padding: 6px 0 12px;
+  padding: 8px 0 16px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .field {
-  margin: 8px 0;
+  margin: 10px 0;
 }
 .field label {
   display: block;
   font-size: 12px;
   color: var(--muted);
-  margin-bottom: 4px;
-}
-.field input {
-  width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  font-size: 13px;
-  background: var(--card);
-  color: var(--text);
+  margin-bottom: 6px;
+  font-weight: 500;
 }
 h3 {
   font-size: 14px;
-  margin: 14px 0 8px;
+  margin: 18px 0 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h3::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--accent-gradient);
+  border-radius: 2px;
 }
 .grid2 {
   display: grid;
@@ -165,13 +174,22 @@ h3 {
   gap: 10px;
 }
 .item {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
   background: var(--card);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.item:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 .item.owned {
-  border-color: var(--accent);
+  border-color: rgba(91, 108, 255, 0.3);
+  background: linear-gradient(135deg, var(--accent-soft), transparent);
 }
 .item-name {
   font-size: 13px;
@@ -179,10 +197,11 @@ h3 {
 }
 .item-desc {
   font-size: 11px;
-  margin: 2px 0 8px;
+  margin: 4px 0 10px;
+  line-height: 1.4;
 }
 .btn.small {
-  padding: 3px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   width: 100%;
 }
@@ -193,8 +212,13 @@ h3 {
 .tag {
   display: inline-block;
   font-size: 12px;
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--good);
+  font-weight: 700;
+  padding: 4px 10px;
+  background: rgba(43, 191, 138, 0.1);
+  border-radius: 999px;
+  width: 100%;
+  text-align: center;
 }
 @media (max-width: 520px) {
   .grid2 {
