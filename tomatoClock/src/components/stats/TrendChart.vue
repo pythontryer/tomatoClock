@@ -123,31 +123,38 @@ function dayLabel(d: { day: string }, i: number) {
 }
 .seg {
   display: flex;
-  background: var(--bg);
+  background: var(--accent-soft);
   border-radius: 999px;
-  padding: 2px;
+  padding: 3px;
 }
 .seg button {
-  padding: 4px 12px;
+  padding: 5px 14px;
   font-size: 12px;
   border-radius: 999px;
   color: var(--muted);
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 .seg button.active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--card);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.seg button:hover:not(.active) {
+  color: var(--text);
 }
 .tracks-wrap {
   position: relative;
   display: flex;
-  gap: 4px;
-  height: 160px;
+  gap: 5px;
+  height: 170px;
+  padding: 20px 0 4px;
 }
 .track {
   flex: 1;
   position: relative;
   background: var(--bg);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: visible;
 }
 .fill {
@@ -155,22 +162,37 @@ function dayLabel(d: { day: string }, i: number) {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--accent);
-  border-radius: 6px 6px 0 0;
-  min-height: 2px;
-  transition: height 0.3s ease;
+  background: linear-gradient(180deg, #7b8cff 0%, #5b6cff 100%);
+  border-radius: 8px 8px 4px 4px;
+  min-height: 3px;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: barGrow 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+@keyframes barGrow {
+  from { height: 0 !important; }
+}
+.fill:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(91, 108, 255, 0.3);
 }
 .fill.hit {
-  background: var(--good);
+  background: linear-gradient(180deg, #37c992 0%, #2bbf8a 100%);
+}
+.fill.hit:hover {
+  box-shadow: 0 4px 12px rgba(43, 191, 138, 0.3);
 }
 .fill .val {
   position: absolute;
-  top: -18px;
+  top: -20px;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 10px;
-  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.fill.hit .val {
+  color: var(--good);
 }
 .target-line {
   position: absolute;

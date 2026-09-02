@@ -144,26 +144,41 @@ const ROW_LABELS = ['', '一', '', '三', '', '五', '']
   gap: 3px;
 }
 .cell {
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
   background: var(--bg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+}
+.cell:hover {
+  transform: scale(1.3);
+  z-index: 1;
+}
+.cell.lv0 {
+  background: var(--bg);
+  opacity: 0.6;
 }
 .cell.lv1 {
-  background: color-mix(in srgb, var(--accent) 25%, var(--bg));
+  background: linear-gradient(135deg, #c7d0ff, #a8b4ff);
 }
 .cell.lv2 {
-  background: color-mix(in srgb, var(--accent) 50%, var(--bg));
+  background: linear-gradient(135deg, #8b9bff, #6b7dff);
 }
 .cell.lv3 {
-  background: color-mix(in srgb, var(--accent) 75%, var(--bg));
+  background: linear-gradient(135deg, #5b6cff, #7b5cf6);
 }
 .cell.lv4 {
-  background: var(--accent);
+  background: linear-gradient(135deg, #7b5cf6, #a855f7);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+.cell.lv4:hover {
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.7);
 }
 .cell.future {
-  background: var(--bg);
-  opacity: 0.4;
+  background: transparent;
+  border: 1px dashed var(--border);
+  opacity: 0.5;
 }
 .legend {
   display: flex;

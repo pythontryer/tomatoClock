@@ -46,39 +46,59 @@ const taskDist = computed(() => {
 .task-dist {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 10px;
 }
 .td-row {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
+  transition: transform 0.15s ease;
+}
+.td-row:hover {
+  transform: translateX(2px);
 }
 .td-name {
-  flex: 0 0 38%;
+  flex: 0 0 35%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text);
+  font-weight: 500;
 }
 .td-track {
   flex: 1;
-  height: 14px;
+  height: 16px;
   background: var(--bg);
-  border-radius: 7px;
+  border-radius: 8px;
   overflow: hidden;
 }
 .td-fill {
   height: 100%;
-  background: var(--accent);
-  border-radius: 7px;
-  transition: width 0.3s ease;
-  min-width: 2px;
+  background: linear-gradient(90deg, #5b6cff, #8b5cf6);
+  border-radius: 8px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 3px;
+  position: relative;
+}
+.td-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+  border-radius: 8px 8px 0 0;
 }
 .td-val {
   flex: 0 0 auto;
-  color: var(--muted);
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
 }
 .td-empty {
   font-size: 12px;

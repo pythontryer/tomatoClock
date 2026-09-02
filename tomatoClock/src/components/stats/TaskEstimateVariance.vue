@@ -95,23 +95,34 @@ const summary = computed(() => {
   color: var(--warn);
 }
 .track {
-  margin-top: 4px;
-  height: 8px;
+  margin-top: 6px;
+  height: 10px;
   background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
 }
 .fill {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, #5b6cff, #8b5cf6);
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+  border-radius: 999px 999px 0 0;
 }
 .fill.done {
-  background: var(--good);
+  background: linear-gradient(90deg, #2bbf8a, #1fb6d6);
 }
 .fill.over {
-  background: var(--warn);
+  background: linear-gradient(90deg, #ffae42, #ff6b6b);
 }
 .footer {
   margin-top: 12px;

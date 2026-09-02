@@ -64,21 +64,31 @@ const weekHabit = computed(() =>
 }
 .bar-fill {
   width: 100%;
-  border-radius: 8px 8px 0 0;
-  transition: height 0.3s ease;
-  min-height: 2px;
+  border-radius: 8px 8px 4px 4px;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 3px;
+  animation: barGrow 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+@keyframes barGrow {
+  from { height: 0 !important; }
 }
 .bar-fill.habit {
-  background: var(--good);
+  background: linear-gradient(180deg, #37c992 0%, #2bbf8a 100%);
+}
+.bar-fill.habit:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 8px rgba(43, 191, 138, 0.3);
 }
 .bar-val {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--good);
+  font-weight: 600;
   margin: 4px 0 2px;
   height: 14px;
 }
 .bar-day {
   font-size: 11px;
   color: var(--muted);
+  font-weight: 500;
 }
 </style>
