@@ -66,49 +66,105 @@ function onFileChange(e: Event) {
 }
 
 // ---------- 录音 ----------
+/** 检测浏览器支持的录音格式，返回可用的 mimeType */
+function getSupportedMimeType(): string {
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/mp4',
+    ''
+  ]
+  for (const type of candidates) {
+    if (type === '' || (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type))) {
+      return type
+    }
+  }
+  return ''
+}
+
 async function startRecording() {
   if (!canAdd.value) {
     showMsg('err', `最多保存 ${MAX_CUSTOM} 个自定义提示音，请先删除一个`)
     return
   }
+  if (typeof MediaRecorder === 'undefined') {
+    showMsg('err', '当前浏览器不支持录音功能，请使用 Chrome、Edge 或 Firefox')
+    return
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showMsg('err', '无法访问麦克风设备，请确认浏览器已授权麦克风权限')
+    return
+  }
   try {
     recordStream = await navigator.mediaDevices.getUserMedia({ audio: true })
     recordChunks = []
-    mediaRecorder = new MediaRecorder(recordStream)
+    const mimeType = getSupportedMimeType()
+    mediaRecorder = mimeType ? new MediaRecorder(recordStream, { mimeType }) : new MediaRecorder(recordStream)
+
+    mediaRecorder.onerror = (e) => {
+      showMsg('err', `录音出错：${(e as unknown as { error?: { message?: string } }).error?.message || '未知错误'}`)
+      cleanupRecording()
+      recording.value = false
+    }
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) recordChunks.push(e.data)
     }
     mediaRecorder.onstop = () => {
+      if (recordChunks.length === 0) {
+        showMsg('err', '未录到声音，请检查麦克风是否正常工作')
+        cleanupRecording()
+        return
+      }
       const blob = new Blob(recordChunks, { type: mediaRecorder?.mimeType || 'audio/webm' })
       const reader = new FileReader()
       reader.onload = () => {
         const data = reader.result as string
+        // base64 部分约占 data URL 的 75%，估算实际大小
+        const base64Size = data.length - data.indexOf(',') - 1
+        const approxBytes = Math.round(base64Size * 0.75)
+        if (approxBytes > 800 * 1024) {
+          showMsg('err', `录音文件过大（约 ${(approxBytes / 1024).toFixed(0)}KB），请缩短录音时间`)
+          cleanupRecording()
+          return
+        }
         const name = `录音 ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
         const id = store.addCustomSound(name, data)
         if (id) {
-          showMsg('ok', `录音已保存（${recordSeconds.value} 秒）`)
+          showMsg('ok', `录音已保存（${recordSeconds.value} 秒），可在下方试听`)
         } else {
-          showMsg('err', '保存失败')
+          showMsg('err', '保存失败，可能已达数量上限')
         }
+        cleanupRecording()
+      }
+      reader.onerror = () => {
+        showMsg('err', '录音数据处理失败')
         cleanupRecording()
       }
       reader.readAsDataURL(blob)
     }
-    mediaRecorder.start()
+    mediaRecorder.start(1000) // 每 1 秒触发一次 dataavailable，确保数据及时写入
     recording.value = true
     recordSeconds.value = 0
     recordTimer = setInterval(() => {
       recordSeconds.value++
-      if (recordSeconds.value >= 15) stopRecording() // 最长 15 秒
+      if (recordSeconds.value >= 15) stopRecording()
     }, 1000)
-  } catch {
-    showMsg('err', '无法访问麦克风，请检查浏览器权限设置')
+  } catch (err) {
+    const name = (err as { name?: string }).name
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+      showMsg('err', '麦克风权限被拒绝，请点击地址栏 🔒 图标允许麦克风访问')
+    } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      showMsg('err', '未检测到麦克风设备')
+    } else {
+      showMsg('err', `无法启动录音：${(err as Error).message || '请检查麦克风权限'}`)
+    }
     cleanupRecording()
   }
 }
 
 function stopRecording() {
-  if (mediaRecorder && recording.value) {
+  if (mediaRecorder && recording.value && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop()
     recording.value = false
   }
