@@ -8,6 +8,8 @@ import TaskDistribution from '@/components/stats/TaskDistribution.vue'
 import HabitRateChart from '@/components/stats/HabitRateChart.vue'
 import TaskEstimateVariance from '@/components/stats/TaskEstimateVariance.vue'
 import TrendChart from '@/components/stats/TrendChart.vue'
+import SessionReflection from '@/components/stats/SessionReflection.vue'
+import LogSession from '@/components/stats/LogSession.vue'
 import type { Habit, Session, Task } from '@/types/models'
 
 let pinia: Pinia
@@ -298,5 +300,105 @@ describe('TrendChart', () => {
     const wrapper = mount(TrendChart, { global: { plugins: [pinia] } })
     expect(wrapper.find('.target-line').exists()).toBe(true)
     expect(wrapper.find('.target-label').text()).toContain('目标 120分')
+  })
+})
+
+describe('SessionReflection', () => {
+  it('无专注记录时不渲染', () => {
+    const wrapper = mount(SessionReflection, { global: { plugins: [pinia] } })
+    expect(wrapper.find('.sess').exists()).toBe(false)
+  })
+
+  it('按时间倒序显示，最新的在前', () => {
+    const store = useAppStore()
+    const old = sessionPast(25, 3)
+    const recent = sessionToday(50)
+    store.sessions.push(old, recent)
+    const wrapper = mount(SessionReflection, { global: { plugins: [pinia] } })
+    const items = wrapper.findAll('.item')
+    expect(items).toHaveLength(2)
+    // 第一个应该是最近的（50分钟）
+    expect(items[0].find('.min').text()).toContain('50')
+    expect(items[1].find('.min').text()).toContain('25')
+  })
+
+  it('最多显示最近 12 次', () => {
+    const store = useAppStore()
+    for (let i = 0; i < 15; i++) {
+      store.sessions.push({ id: 's' + i, minutes: 25, ts: Date.now() + i, rating: 0, note: '' })
+    }
+    const wrapper = mount(SessionReflection, { global: { plugins: [pinia] } })
+    expect(wrapper.findAll('.item')).toHaveLength(12)
+    expect(wrapper.find('.title').text()).toContain('最近 12 次')
+  })
+
+  it('显示专注意图', () => {
+    const store = useAppStore()
+    store.sessions.push({ id: 's1', minutes: 25, ts: Date.now(), intention: '写论文', rating: 0, note: '' })
+    const wrapper = mount(SessionReflection, { global: { plugins: [pinia] } })
+    expect(wrapper.find('.intent').text()).toContain('写论文')
+  })
+
+  it('星级评分显示正确，未评显示"未评"', () => {
+    const store = useAppStore()
+    const now = Date.now()
+    store.sessions.push(
+      { id: 's2', minutes: 25, ts: now, rating: 0, note: '' },
+      { id: 's1', minutes: 25, ts: now + 1000, rating: 4, note: '' }
+    )
+    const wrapper = mount(SessionReflection, { global: { plugins: [pinia] } })
+    const items = wrapper.findAll('.item')
+    // 第一个（s1，4分，时间更晚）应该有4个亮星
+    expect(items[0].findAll('.star.on')).toHaveLength(4)
+    expect(items[0].find('.sm').text()).toContain('4 分')
+    // 第二个（s2，未评）应该0个亮星
+    expect(items[1].findAll('.star.on')).toHaveLength(0)
+    expect(items[1].find('.sm').text()).toContain('未评')
+  })
+
+  it('点击星星调用 store.reflect 更新评分', async () => {
+    const store = useAppStore()
+    store.sessions.push({ id: 's1', minutes: 25, ts: Date.now(), rating: 0, note: '' })
+    const wrapper = mount(SessionReflection, { global: { plugins: [pinia] } })
+    const stars = wrapper.findAll('.star')
+    await stars[2].trigger('click') // 点第3颗星
+    expect(store.sessions[0].rating).toBe(3)
+  })
+})
+
+describe('LogSession', () => {
+  it('默认补记时长为 25 分钟', () => {
+    const wrapper = mount(LogSession, { global: { plugins: [pinia] } })
+    const input = wrapper.find('input[type="number"]')
+    expect(input.element.value).toBe('25')
+  })
+
+  it('点击补记按钮调用 store.logSession 并显示成功消息', async () => {
+    const store = useAppStore()
+    const wrapper = mount(LogSession, { global: { plugins: [pinia] } })
+    await wrapper.find('input').setValue(30)
+    await wrapper.find('button').trigger('click')
+    expect(store.sessions).toHaveLength(1)
+    expect(store.sessions[0].minutes).toBe(30)
+    expect(wrapper.find('.log-msg').text()).toContain('已补记 30 分钟专注')
+  })
+
+  it('输入 0 或无效值不记录', async () => {
+    const store = useAppStore()
+    const wrapper = mount(LogSession, { global: { plugins: [pinia] } })
+    await wrapper.find('input').setValue(0)
+    await wrapper.find('button').trigger('click')
+    expect(store.sessions).toHaveLength(0)
+    expect(wrapper.find('.log-msg').exists()).toBe(false)
+  })
+
+  it('按 Enter 键触发补记', async () => {
+    const store = useAppStore()
+    const wrapper = mount(LogSession, { global: { plugins: [pinia] } })
+    const input = wrapper.find('input')
+    await input.setValue(45)
+    await input.trigger('keyup.enter')
+    expect(store.sessions).toHaveLength(1)
+    expect(store.sessions[0].minutes).toBe(45)
   })
 })
