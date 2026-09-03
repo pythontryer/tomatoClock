@@ -4,7 +4,8 @@ import {
   normalizeHabit,
   normalizeTask,
   normalizeSession,
-  normalizeCompanion
+  normalizeCompanion,
+  normalizeEvolution
 } from '@/utils/normalize'
 
 /**
@@ -71,6 +72,7 @@ export function withDefaults(base: Partial<AppState> | null): AppState {
         ? (b.activeTaskId ?? null)
         : null,
     settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) },
-    companion: normalizeCompanion(b.companion)
+    companion: normalizeCompanion(b.companion),
+    evolution: normalizeEvolution(b.evolution)
   }
 }

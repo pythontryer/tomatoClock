@@ -74,6 +74,33 @@ export interface CompanionState {
   failMsg: string
 }
 
+/** 进化系统状态：道具 + 形态变化 */
+export interface EvolutionState {
+  /** 当前形态 id */
+  formId: string
+  /** 当前形态名字（可被改名） */
+  name: string
+  /** 当前装饰 emoji */
+  decoration: string
+  /** 道具库存：{ itemId: count } */
+  inventory: Record<string, number>
+  /** 当前想要的道具 id */
+  wantedItemId: string
+  /** 进化历史记录 */
+  history: EvolutionHistoryEntry[]
+  /** 已发现的形态 id 集合 */
+  discoveredForms: string[]
+}
+
+export interface EvolutionHistoryEntry {
+  ts: number
+  fromForm: string
+  toForm?: string
+  itemUsed: string
+  message: string
+  rarity: string
+}
+
 export interface Settings {
   focusMin: number
   breakMin: number
@@ -107,4 +134,6 @@ export interface AppState {
   settings: Settings
   /** 陪伴角色（数字宠物）状态 */
   companion: CompanionState
+  /** 进化系统状态 */
+  evolution: EvolutionState
 }

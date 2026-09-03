@@ -1,5 +1,5 @@
-import { normalizeHabit, normalizeTask, normalizeSession } from '@/utils/normalize'
-import type { Habit, HabitChecks, Session, Task, Settings } from '@/types/models'
+import { normalizeHabit, normalizeTask, normalizeSession, normalizeEvolution } from '@/utils/normalize'
+import type { Habit, HabitChecks, Session, Task, Settings, EvolutionState } from '@/types/models'
 
 /** 校验+清洗后的干净数据 */
 export interface SanitizedData {
@@ -10,8 +10,9 @@ export interface SanitizedData {
   pomoCycle: number
   activeTaskId: string | null
   settings: Settings | null
+  evolution: EvolutionState | null
   /** 这些是后加字段，老备份可能没有 */
-  present: { tasks: boolean; pomoCycle: boolean; activeTaskId: boolean }
+  present: { tasks: boolean; pomoCycle: boolean; activeTaskId: boolean; evolution: boolean }
 }
 
 export interface ImportResult {
@@ -91,11 +92,12 @@ export function sanitize(raw: unknown): ImportResult {
     }
   }
 
-  // tasks / pomoCycle / activeTaskId 是后加字段，老备份可能没有，需记录是否存在
+  // tasks / pomoCycle / activeTaskId / evolution 是后加字段，老备份可能没有，需记录是否存在
   const present = {
     tasks: Array.isArray(data.tasks),
     pomoCycle: 'pomoCycle' in data,
-    activeTaskId: 'activeTaskId' in data
+    activeTaskId: 'activeTaskId' in data,
+    evolution: 'evolution' in data && typeof data.evolution === 'object' && data.evolution !== null
   }
   const tasks: Task[] = []
   if (present.tasks) {
@@ -122,8 +124,12 @@ export function sanitize(raw: unknown): ImportResult {
       ? (data.settings as Settings)
       : null
 
+  const evolution = present.evolution
+    ? normalizeEvolution(data.evolution as Partial<EvolutionState>)
+    : null
+
   return {
-    data: { habits, sessions, habitChecks, tasks, pomoCycle, activeTaskId, settings, present },
+    data: { habits, sessions, habitChecks, tasks, pomoCycle, activeTaskId, settings, evolution, present },
     skipped
   }
 }

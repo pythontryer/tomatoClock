@@ -3,6 +3,14 @@ import { loadState, withDefaults } from './persistence'
 import { uid } from '@/utils/id'
 import { todayKey } from '@/utils/date'
 import { focusCoins, findCosmetic, PLANT_FORMS, CELEBRATIONS } from '@/constants'
+import {
+  rollItem,
+  generateEvolution,
+  getWantedItem,
+  EVOLUTION_FORMS,
+  EVOLUTION_ITEMS,
+  type EvolutionResult
+} from '@/constants/evolution'
 import type { AppState, Task, HabitFreq } from '@/types/models'
 import type { SanitizedData } from '@/utils/importExport'
 
@@ -103,7 +111,7 @@ export const useAppStore = defineStore('app', {
       this.sessions.push({ id: uid(), minutes, ts: Date.now() })
     },
 
-    /** 完成一个专注番茄：记录会话、推进长休息节奏、给绑定任务 +1 🍅 、给陪伴角色发放专注币；返回新建会话 id 以便复盘 */
+    /** 完成一个专注番茄：记录会话、推进长休息节奏、给绑定任务 +1 🍅 、给陪伴角色发放专注币、获得进化道具；返回新建会话 id 以便复盘 */
     recordFocus(minutes: number, intention?: string): string {
       const id = uid()
       this.sessions.push({
@@ -119,6 +127,9 @@ export const useAppStore = defineStore('app', {
       if (t) t.pomo += 1
       // 完成专注 → 陪伴角色获得专注币（完成才是奖励，提前退出不奖励）
       this.companion.coins += focusCoins(minutes)
+      // 完成专注 → 获得一个随机进化道具
+      const item = rollItem()
+      this.evolution.inventory[item.id] = (this.evolution.inventory[item.id] ?? 0) + 1
       return id
     },
 
@@ -168,6 +179,73 @@ export const useAppStore = defineStore('app', {
       return true
     },
 
+    // ---------- 进化系统 ----------
+    /** 使用道具触发进化变化，返回变化结果；道具不足返回 null */
+    useEvolutionItem(itemId: string): EvolutionResult | null {
+      const count = this.evolution.inventory[itemId] ?? 0
+      if (count < 1) return null
+      const item = EVOLUTION_ITEMS.find((i) => i.id === itemId)
+      if (!item) return null
+      const currentForm = EVOLUTION_FORMS.find((f) => f.id === this.evolution.formId) ?? EVOLUTION_FORMS[0]
+
+      // 消耗道具
+      this.evolution.inventory[itemId] = count - 1
+
+      // 生成变化
+      const result = generateEvolution(currentForm, item, this.evolution.name)
+
+      // 应用变化
+      if (result.type === 'transform' || result.type === 'levelup') {
+        if (result.newForm) {
+          this.evolution.formId = result.newForm.id
+          if (!this.evolution.discoveredForms.includes(result.newForm.id)) {
+            this.evolution.discoveredForms.push(result.newForm.id)
+          }
+        }
+      } else if (result.type === 'decorate' && result.decoration) {
+        this.evolution.decoration = result.decoration
+      } else if (result.type === 'rename' && result.newName) {
+        this.evolution.name = result.newName
+      }
+
+      // 记录历史
+      this.evolution.history.unshift({
+        ts: Date.now(),
+        fromForm: currentForm.id,
+        toForm: result.newForm?.id,
+        itemUsed: itemId,
+        message: result.message,
+        rarity: result.rarity
+      })
+      if (this.evolution.history.length > 50) this.evolution.history = this.evolution.history.slice(0, 50)
+
+      // 刷新想要的道具
+      const newForm = EVOLUTION_FORMS.find((f) => f.id === this.evolution.formId) ?? EVOLUTION_FORMS[0]
+      this.evolution.wantedItemId = getWantedItem(newForm).id
+
+      return result
+    },
+
+    /** 手动刷新想要的道具（不消耗任何东西） */
+    refreshWantedItem() {
+      const form = EVOLUTION_FORMS.find((f) => f.id === this.evolution.formId) ?? EVOLUTION_FORMS[0]
+      this.evolution.wantedItemId = getWantedItem(form).id
+    },
+
+    /** 重置进化系统（调试用，不暴露在 UI） */
+    resetEvolution() {
+      const wanted = getWantedItem(EVOLUTION_FORMS[0])
+      this.evolution = {
+        formId: EVOLUTION_FORMS[0].id,
+        name: EVOLUTION_FORMS[0].name,
+        decoration: '',
+        inventory: {},
+        wantedItemId: wanted.id,
+        history: [],
+        discoveredForms: [EVOLUTION_FORMS[0].id]
+      }
+    },
+
     // ---------- 自定义提示音 ----------
     /** 添加自定义提示音（上传或录音），返回新提示音 id；超过数量上限返回 null */
     addCustomSound(name: string, data: string): string | null {
@@ -201,6 +279,7 @@ export const useAppStore = defineStore('app', {
       if (data.present.tasks) this.tasks = data.tasks
       if (data.present.pomoCycle) this.pomoCycle = data.pomoCycle
       if (data.present.activeTaskId) this.activeTaskId = data.activeTaskId
+      if (data.present.evolution && data.evolution) this.evolution = data.evolution
       if (data.settings) this.settings = { ...this.settings, ...data.settings }
     },
 
@@ -233,6 +312,15 @@ export const useAppStore = defineStore('app', {
       }
       if (data.present.activeTaskId && !this.activeTaskId) {
         this.activeTaskId = data.activeTaskId
+      }
+      if (data.present.evolution && data.evolution) {
+        // 进化数据：合并已发现形态，取较新的形态
+        const discovered = new Set([...this.evolution.discoveredForms, ...data.evolution.discoveredForms])
+        this.evolution.discoveredForms = [...discovered]
+        // 道具库存合并
+        for (const [k, v] of Object.entries(data.evolution.inventory)) {
+          this.evolution.inventory[k] = (this.evolution.inventory[k] ?? 0) + (v || 0)
+        }
       }
       if (data.settings) this.settings = { ...this.settings, ...data.settings }
     }

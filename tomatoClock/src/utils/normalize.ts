@@ -1,5 +1,6 @@
-import type { CompanionState, Habit, HabitFreq, Session, Task } from '@/types/models'
+import type { CompanionState, EvolutionState, Habit, HabitFreq, Session, Task } from '@/types/models'
 import { DEFAULT_COMPANION_NAME } from '@/constants'
+import { DEFAULT_FORM, getWantedItem, EVOLUTION_FORMS } from '@/constants/evolution'
 
 /**
  * 归一化工具：把「可能有缺失字段」的对象补齐为完整、合法的领域模型。
@@ -60,6 +61,44 @@ export function defaultCompanion(): CompanionState {
     activeCelebration: 'confetti',
     completeMsg: '',
     failMsg: ''
+  }
+}
+
+export function defaultEvolution(): EvolutionState {
+  const wanted = getWantedItem(DEFAULT_FORM)
+  return {
+    formId: DEFAULT_FORM.id,
+    name: DEFAULT_FORM.name,
+    decoration: '',
+    inventory: {},
+    wantedItemId: wanted.id,
+    history: [],
+    discoveredForms: [DEFAULT_FORM.id]
+  }
+}
+
+export function normalizeEvolution(e: Partial<EvolutionState> | null | undefined): EvolutionState {
+  const d = defaultEvolution()
+  if (!e || typeof e !== 'object') return d
+  const formId =
+    typeof e.formId === 'string' && EVOLUTION_FORMS.some((f) => f.id === e.formId)
+      ? e.formId
+      : d.formId
+  const inventory =
+    e.inventory && typeof e.inventory === 'object' && !Array.isArray(e.inventory)
+      ? e.inventory
+      : {}
+  const discoveredForms = Array.isArray(e.discoveredForms)
+    ? Array.from(new Set([...d.discoveredForms, ...e.discoveredForms.filter((x) => typeof x === 'string')]))
+    : d.discoveredForms
+  return {
+    formId,
+    name: typeof e.name === 'string' && e.name.trim() ? e.name.trim().slice(0, 16) : d.name,
+    decoration: typeof e.decoration === 'string' ? e.decoration : '',
+    inventory,
+    wantedItemId: typeof e.wantedItemId === 'string' ? e.wantedItemId : d.wantedItemId,
+    history: Array.isArray(e.history) ? e.history.slice(-50) : [],
+    discoveredForms
   }
 }
 
