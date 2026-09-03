@@ -15,7 +15,7 @@ const notif = useNotification()
 const { playChime, previewSound, unlockAudio } = sound
 const { notifPerm, notifAction, inIframe, requestNotify, notify } = notif
 
-// 番茄结束时的副作用：通知 + 提示音 + 奖励弹层 + 打开复盘
+// 番茄结束时的副作用：通知 + 提示音 + 奖励弹层 + 打开复盘 + 后台AI生成道具
 function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
   if (isLong) {
     notify('🍅 专注完成！', `已完成 ${store.pomoCycle} 个番茄，享受一次长休息吧~`)
@@ -25,6 +25,28 @@ function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
   playChime()
   showReward(minutes)
   openReflection(sessionId)
+  // 后台静默生成AI道具，用户无感，生成成功后自动入库存并追加显示
+  generateAiItemBackground()
+}
+
+// 后台AI生成道具：失败静默，成功后追加到奖励弹层
+async function generateAiItemBackground() {
+  try {
+    const item = await store.generateAiItemAction()
+    if (item) {
+      // 追加显示AI道具
+      reward.value = {
+        gift: item.emoji,
+        coins: 0,
+        aiItem: item.name,
+        aiRarity: item.rarity
+      }
+      clearTimers()
+      rewardTimer = setTimeout(() => (reward.value = null), 5000)
+    }
+  } catch {
+    // 静默失败，不影响用户体验
+  }
 }
 function onBreakComplete() {
   notify('☕ 休息结束', '休息结束，开始下一个番茄吧！')
@@ -32,7 +54,7 @@ function onBreakComplete() {
 }
 
 // ---------- 陪伴角色 + 奖励循环 ----------
-const reward = ref<{ gift: string; coins: number } | null>(null)
+const reward = ref<{ gift: string; coins: number; aiItem?: string; aiRarity?: string } | null>(null)
 const missMsg = ref<string | null>(null)
 const tendMsg = ref<string | null>(null)
 let rewardTimer: ReturnType<typeof setTimeout> | null = null
@@ -277,8 +299,15 @@ function openStandalone() {
     <transition name="fade">
       <div v-if="reward" class="reward-pop" role="status">
         <div class="reward-gift">{{ reward.gift }}</div>
-        <div class="reward-text">{{ store.companion.completeMsg || DEFAULT_COMPLETE }}</div>
-        <div class="reward-coins">+{{ reward.coins }} 💧</div>
+        <div v-if="reward.aiItem" class="reward-ai-item">
+          <span class="ai-label">✨ AI 生成道具</span>
+          <span class="ai-name">{{ reward.aiItem }}</span>
+          <span class="ai-rarity" :class="'rarity-' + (reward.aiRarity || 'common')">
+            {{ reward.aiRarity === 'legendary' ? '传说' : reward.aiRarity === 'rare' ? '稀有' : '普通' }}
+          </span>
+        </div>
+        <div v-else class="reward-text">{{ store.companion.completeMsg || DEFAULT_COMPLETE }}</div>
+        <div v-if="reward.coins > 0" class="reward-coins">+{{ reward.coins }} 💧</div>
       </div>
     </transition>
 
@@ -742,6 +771,34 @@ function openStandalone() {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+.reward-ai-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.ai-label {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.ai-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+.ai-rarity {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: white;
+}
+.ai-rarity.rarity-common { background: #2bbf8a; }
+.ai-rarity.rarity-rare { background: #9b6bff; }
+.ai-rarity.rarity-legendary { background: linear-gradient(135deg, #FFD700, #FFA500); }
 .miss-hint {
   margin: 6px 0 0;
   font-size: 12px;

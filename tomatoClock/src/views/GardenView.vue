@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import {
   EVOLUTION_FORMS,
@@ -9,20 +9,9 @@ import {
   type EvolutionResult
 } from '@/constants/evolution'
 import { getFocusLevel, getNextLevel } from '@/constants'
-import { checkAiHealth } from '@/utils/aiApi'
 import type { CustomItem } from '@/types/models'
 
 const store = useAppStore()
-
-// AI 服务状态
-const aiAvailable = ref(false)
-const aiGenerating = ref(false)
-const aiMsg = ref<string | null>(null)
-
-onMounted(async () => {
-  const health = await checkAiHealth()
-  aiAvailable.value = health.ok && health.apiKeyConfigured
-})
 
 // 当前形态
 const currentForm = computed<EvolutionForm>(
@@ -98,24 +87,6 @@ function showResult(result: EvolutionResult) {
 
 function refreshWanted() {
   store.refreshWantedItem()
-}
-
-// AI 生成道具
-async function generateItem() {
-  if (aiGenerating.value) return
-  aiGenerating.value = true
-  aiMsg.value = null
-  try {
-    const item = await store.generateAiItemAction()
-    if (item) {
-      aiMsg.value = `✨ AI 生成了「${item.emoji} ${item.name}」（${rarityLabel(item.rarity)}）！`
-    } else {
-      aiMsg.value = '❌ AI 生成失败，请检查后端 API Key 配置'
-    }
-  } finally {
-    aiGenerating.value = false
-    setTimeout(() => (aiMsg.value = null), 4000)
-  }
 }
 
 // 稀有度颜色
@@ -221,22 +192,8 @@ const totalForms = EVOLUTION_FORMS.length
     <section class="card inventory-section">
       <div class="section-header">
         <h2 class="section-title">🎒 道具背包</h2>
-        <div class="section-actions">
-          <button
-            v-if="aiAvailable"
-            class="ai-generate-btn"
-            :class="{ loading: aiGenerating }"
-            :disabled="aiGenerating"
-            @click="generateItem"
-          >
-            {{ aiGenerating ? '生成中...' : '✨ AI 生成道具' }}
-          </button>
-          <span v-else class="section-hint">点击道具给小伙伴使用</span>
-        </div>
+        <span class="section-hint">完成番茄钟自动获得道具，点击给小伙伴使用</span>
       </div>
-      <transition name="fade">
-        <div v-if="aiMsg" class="ai-msg">{{ aiMsg }}</div>
-      </transition>
       <div v-if="inventoryItems.length === 0" class="empty-state">
         <div class="empty-icon">📦</div>
         <p>背包空空如也~</p>
