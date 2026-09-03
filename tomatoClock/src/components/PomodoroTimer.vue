@@ -29,23 +29,32 @@ function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
   generateAiItemBackground()
 }
 
-// 后台AI生成道具：失败静默，成功后追加到奖励弹层
+// 后台AI生成道具：先显示生成中动画，成功后揭晓结果
 async function generateAiItemBackground() {
+  // 显示生成中动画
+  reward.value = {
+    gift: '✨',
+    coins: 0,
+    generating: true
+  }
+  clearTimers()
   try {
     const item = await store.generateAiItemAction()
     if (item) {
-      // 追加显示AI道具
+      // 生成成功，揭晓结果
       reward.value = {
         gift: item.emoji,
         coins: 0,
         aiItem: item.name,
         aiRarity: item.rarity
       }
-      clearTimers()
       rewardTimer = setTimeout(() => (reward.value = null), 5000)
+    } else {
+      // AI不可用或失败，恢复显示预设奖励
+      showReward(store.settings.focusMin)
     }
   } catch {
-    // 静默失败，不影响用户体验
+    showReward(store.settings.focusMin)
   }
 }
 function onBreakComplete() {
@@ -54,7 +63,13 @@ function onBreakComplete() {
 }
 
 // ---------- 陪伴角色 + 奖励循环 ----------
-const reward = ref<{ gift: string; coins: number; aiItem?: string; aiRarity?: string } | null>(null)
+const reward = ref<{
+  gift: string
+  coins: number
+  aiItem?: string
+  aiRarity?: string
+  generating?: boolean
+} | null>(null)
 const missMsg = ref<string | null>(null)
 const tendMsg = ref<string | null>(null)
 let rewardTimer: ReturnType<typeof setTimeout> | null = null
@@ -298,16 +313,38 @@ function openStandalone() {
 
     <transition name="fade">
       <div v-if="reward" class="reward-pop" role="status">
-        <div class="reward-gift">{{ reward.gift }}</div>
-        <div v-if="reward.aiItem" class="reward-ai-item">
-          <span class="ai-label">✨ AI 生成道具</span>
-          <span class="ai-name">{{ reward.aiItem }}</span>
-          <span class="ai-rarity" :class="'rarity-' + (reward.aiRarity || 'common')">
-            {{ reward.aiRarity === 'legendary' ? '传说' : reward.aiRarity === 'rare' ? '稀有' : '普通' }}
-          </span>
-        </div>
-        <div v-else class="reward-text">{{ store.companion.completeMsg || DEFAULT_COMPLETE }}</div>
-        <div v-if="reward.coins > 0" class="reward-coins">+{{ reward.coins }} 💧</div>
+        <!-- 生成中动画 -->
+        <template v-if="reward.generating">
+          <div class="generating-wrap">
+            <div class="generating-orbit">
+              <span class="orbit-dot d1">✨</span>
+              <span class="orbit-dot d2">🎁</span>
+              <span class="orbit-dot d3">💫</span>
+            </div>
+            <div class="generating-gift">❓</div>
+          </div>
+          <div class="reward-text">正在生成神秘道具...</div>
+          <div class="generating-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </template>
+        <!-- AI道具结果 -->
+        <template v-else-if="reward.aiItem">
+          <div class="reward-gift ai-reveal">{{ reward.gift }}</div>
+          <div class="reward-ai-item">
+            <span class="ai-label">✨ AI 生成道具</span>
+            <span class="ai-name">{{ reward.aiItem }}</span>
+            <span class="ai-rarity" :class="'rarity-' + (reward.aiRarity || 'common')">
+              {{ reward.aiRarity === 'legendary' ? '传说' : reward.aiRarity === 'rare' ? '稀有' : '普通' }}
+            </span>
+          </div>
+        </template>
+        <!-- 普通奖励 -->
+        <template v-else>
+          <div class="reward-gift">{{ reward.gift }}</div>
+          <div class="reward-text">{{ store.companion.completeMsg || DEFAULT_COMPLETE }}</div>
+          <div v-if="reward.coins > 0" class="reward-coins">+{{ reward.coins }} 💧</div>
+        </template>
       </div>
     </transition>
 
@@ -750,6 +787,71 @@ function openStandalone() {
   line-height: 1;
   margin-bottom: 8px;
   animation: giftBounce 0.6s ease 0.2s both;
+}
+.ai-reveal {
+  animation: aiReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes aiReveal {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; filter: brightness(2); }
+  50% { transform: scale(1.3) rotate(10deg); filter: brightness(1.5); }
+  100% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1); }
+}
+/* 生成中动画 */
+.generating-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.generating-orbit {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation: orbitSpin 2s linear infinite;
+}
+@keyframes orbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.orbit-dot {
+  position: absolute;
+  font-size: 18px;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+}
+.orbit-dot.d1 { transform: rotate(0deg) translateX(36px) rotate(0deg); }
+.orbit-dot.d2 { transform: rotate(120deg) translateX(36px) rotate(-120deg); }
+.orbit-dot.d3 { transform: rotate(240deg) translateX(36px) rotate(-240deg); }
+.generating-gift {
+  font-size: 36px;
+  animation: pulseGlow 1.2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+.generating-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.generating-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+.generating-dots span:nth-child(2) { animation-delay: 0.2s; }
+.generating-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
 }
 @keyframes giftBounce {
   0% { transform: scale(0) rotate(-20deg); }
