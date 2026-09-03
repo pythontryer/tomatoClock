@@ -73,7 +73,8 @@ export function defaultEvolution(): EvolutionState {
     inventory: {},
     wantedItemId: wanted.id,
     history: [],
-    discoveredForms: [DEFAULT_FORM.id]
+    discoveredForms: [DEFAULT_FORM.id],
+    customItems: []
   }
 }
 
@@ -91,6 +92,11 @@ export function normalizeEvolution(e: Partial<EvolutionState> | null | undefined
   const discoveredForms = Array.isArray(e.discoveredForms)
     ? Array.from(new Set([...d.discoveredForms, ...e.discoveredForms.filter((x) => typeof x === 'string')]))
     : d.discoveredForms
+  const customItems = Array.isArray(e.customItems)
+    ? e.customItems.filter(
+        (x) => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string'
+      )
+    : []
   return {
     formId,
     name: typeof e.name === 'string' && e.name.trim() ? e.name.trim().slice(0, 16) : d.name,
@@ -98,7 +104,8 @@ export function normalizeEvolution(e: Partial<EvolutionState> | null | undefined
     inventory,
     wantedItemId: typeof e.wantedItemId === 'string' ? e.wantedItemId : d.wantedItemId,
     history: Array.isArray(e.history) ? e.history.slice(-50) : [],
-    discoveredForms
+    discoveredForms,
+    customItems
   }
 }
 

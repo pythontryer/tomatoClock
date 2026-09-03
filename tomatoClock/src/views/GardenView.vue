@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import {
   EVOLUTION_FORMS,
@@ -9,22 +9,47 @@ import {
   type EvolutionResult
 } from '@/constants/evolution'
 import { getFocusLevel, getNextLevel } from '@/constants'
+import { checkAiHealth } from '@/utils/aiApi'
+import type { CustomItem } from '@/types/models'
 
 const store = useAppStore()
+
+// AI 服务状态
+const aiAvailable = ref(false)
+const aiGenerating = ref(false)
+const aiMsg = ref<string | null>(null)
+
+onMounted(async () => {
+  const health = await checkAiHealth()
+  aiAvailable.value = health.ok && health.apiKeyConfigured
+})
 
 // 当前形态
 const currentForm = computed<EvolutionForm>(
   () => EVOLUTION_FORMS.find((f) => f.id === store.evolution.formId) ?? EVOLUTION_FORMS[0]
 )
 
-// 想要的道具
-const wantedItem = computed<EvolutionItem>(
-  () => EVOLUTION_ITEMS.find((i) => i.id === store.evolution.wantedItemId) ?? EVOLUTION_ITEMS[0]
-)
+// 想要的道具（先查预设，再查自定义）
+const wantedItem = computed<EvolutionItem | CustomItem>(() => {
+  const preset = EVOLUTION_ITEMS.find((i) => i.id === store.evolution.wantedItemId)
+  if (preset) return preset
+  const custom = store.evolution.customItems.find((i) => i.id === store.evolution.wantedItemId)
+  return custom || EVOLUTION_ITEMS[0]
+})
 
-// 道具库存（有数量的）
-const inventoryItems = computed(() => {
-  return EVOLUTION_ITEMS.filter((item) => (store.evolution.inventory[item.id] ?? 0) > 0)
+// 所有道具（预设 + 自定义），有数量的
+type InventoryItem = (EvolutionItem | CustomItem) & { count: number }
+const inventoryItems = computed<InventoryItem[]>(() => {
+  const items: InventoryItem[] = []
+  for (const preset of EVOLUTION_ITEMS) {
+    const count = store.evolution.inventory[preset.id] ?? 0
+    if (count > 0) items.push({ ...preset, count })
+  }
+  for (const custom of store.evolution.customItems) {
+    const count = store.evolution.inventory[custom.id] ?? 0
+    if (count > 0) items.push({ ...custom, count })
+  }
+  return items
 })
 
 // 总道具数
@@ -73,6 +98,24 @@ function showResult(result: EvolutionResult) {
 
 function refreshWanted() {
   store.refreshWantedItem()
+}
+
+// AI 生成道具
+async function generateItem() {
+  if (aiGenerating.value) return
+  aiGenerating.value = true
+  aiMsg.value = null
+  try {
+    const item = await store.generateAiItemAction()
+    if (item) {
+      aiMsg.value = `✨ AI 生成了「${item.emoji} ${item.name}」（${rarityLabel(item.rarity)}）！`
+    } else {
+      aiMsg.value = '❌ AI 生成失败，请检查后端 API Key 配置'
+    }
+  } finally {
+    aiGenerating.value = false
+    setTimeout(() => (aiMsg.value = null), 4000)
+  }
 }
 
 // 稀有度颜色
@@ -178,8 +221,22 @@ const totalForms = EVOLUTION_FORMS.length
     <section class="card inventory-section">
       <div class="section-header">
         <h2 class="section-title">🎒 道具背包</h2>
-        <span class="section-hint">点击道具给小伙伴使用</span>
+        <div class="section-actions">
+          <button
+            v-if="aiAvailable"
+            class="ai-generate-btn"
+            :class="{ loading: aiGenerating }"
+            :disabled="aiGenerating"
+            @click="generateItem"
+          >
+            {{ aiGenerating ? '生成中...' : '✨ AI 生成道具' }}
+          </button>
+          <span v-else class="section-hint">点击道具给小伙伴使用</span>
+        </div>
       </div>
+      <transition name="fade">
+        <div v-if="aiMsg" class="ai-msg">{{ aiMsg }}</div>
+      </transition>
       <div v-if="inventoryItems.length === 0" class="empty-state">
         <div class="empty-icon">📦</div>
         <p>背包空空如也~</p>
@@ -529,6 +586,53 @@ const totalForms = EVOLUTION_FORMS.length
 .section-hint {
   font-size: 12px;
   color: var(--muted);
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-generate-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9b6bff, #5b6cff);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(155, 107, 255, 0.3);
+}
+
+.ai-generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-generate-btn.loading {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.ai-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  background: var(--accent-soft);
+  border-radius: 8px;
 }
 
 /* 道具背包 */

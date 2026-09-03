@@ -90,6 +90,18 @@ export interface EvolutionState {
   history: EvolutionHistoryEntry[]
   /** 已发现的形态 id 集合 */
   discoveredForms: string[]
+  /** AI 生成的自定义道具 */
+  customItems: CustomItem[]
+}
+
+export interface CustomItem {
+  id: string
+  name: string
+  desc: string
+  rarity: 'common' | 'rare' | 'legendary'
+  emoji: string
+  category: string
+  createdAt: number
 }
 
 export interface EvolutionHistoryEntry {

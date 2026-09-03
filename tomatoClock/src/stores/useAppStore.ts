@@ -9,8 +9,11 @@ import {
   getWantedItem,
   EVOLUTION_FORMS,
   EVOLUTION_ITEMS,
-  type EvolutionResult
+  type EvolutionResult,
+  type EvolutionItem
 } from '@/constants/evolution'
+import { generateAiItem, type AiItem } from '@/utils/aiApi'
+import type { CustomItem } from '@/types/models'
 import type { AppState, Task, HabitFreq } from '@/types/models'
 import type { SanitizedData } from '@/utils/importExport'
 
@@ -184,15 +187,25 @@ export const useAppStore = defineStore('app', {
     useEvolutionItem(itemId: string): EvolutionResult | null {
       const count = this.evolution.inventory[itemId] ?? 0
       if (count < 1) return null
-      const item = EVOLUTION_ITEMS.find((i) => i.id === itemId)
+      // 先查预设道具，再查自定义道具
+      const presetItem = EVOLUTION_ITEMS.find((i) => i.id === itemId)
+      const customItem = this.evolution.customItems.find((i) => i.id === itemId)
+      const item = presetItem || customItem
       if (!item) return null
       const currentForm = EVOLUTION_FORMS.find((f) => f.id === this.evolution.formId) ?? EVOLUTION_FORMS[0]
 
       // 消耗道具
       this.evolution.inventory[itemId] = count - 1
 
-      // 生成变化
-      const result = generateEvolution(currentForm, item, this.evolution.name)
+      // 生成变化（自定义道具也按 EvolutionItem 结构传入）
+      const itemForEvolution: EvolutionItem = presetItem || {
+        id: customItem!.id,
+        name: customItem!.name,
+        emoji: customItem!.emoji,
+        rarity: customItem!.rarity,
+        desc: customItem!.desc
+      }
+      const result = generateEvolution(currentForm, itemForEvolution, this.evolution.name)
 
       // 应用变化
       if (result.type === 'transform' || result.type === 'levelup') {
@@ -242,8 +255,38 @@ export const useAppStore = defineStore('app', {
         inventory: {},
         wantedItemId: wanted.id,
         history: [],
-        discoveredForms: [EVOLUTION_FORMS[0].id]
+        discoveredForms: [EVOLUTION_FORMS[0].id],
+        customItems: []
       }
+    },
+
+    /** 添加 AI 生成的自定义道具到库存 */
+    addCustomItem(item: AiItem): string {
+      const id = 'ai-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)
+      const custom: CustomItem = {
+        id,
+        name: item.name,
+        desc: item.desc,
+        rarity: item.rarity,
+        emoji: item.emoji,
+        category: item.category,
+        createdAt: Date.now()
+      }
+      this.evolution.customItems.push(custom)
+      this.evolution.inventory[id] = (this.evolution.inventory[id] ?? 0) + 1
+      return id
+    },
+
+    /** 调用 AI 生成一个道具并加入库存，返回生成的道具；失败返回 null */
+    async generateAiItemAction(category?: string): Promise<CustomItem | null> {
+      const currentForm = EVOLUTION_FORMS.find((f) => f.id === this.evolution.formId)
+      const context = currentForm
+        ? `当前形态：${currentForm.name}(${currentForm.emoji})，类别：${currentForm.category}`
+        : ''
+      const result = await generateAiItem(category || 'random', context)
+      if (!result) return null
+      const id = this.addCustomItem(result)
+      return this.evolution.customItems.find((x) => x.id === id) ?? null
     },
 
     // ---------- 自定义提示音 ----------
