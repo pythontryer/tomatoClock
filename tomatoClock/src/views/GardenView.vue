@@ -455,7 +455,7 @@ function rarityLabel(rarity: string): string {
             <div v-else-if="itemHistory.length === 0" class="history-empty">暂无流转记录</div>
             <div v-else class="history-list">
               <div v-for="(h, idx) in itemHistory" :key="idx" class="history-row">
-                <span class="history-time">{{ formatTransferTime(h.created_at) }}</span>
+                <span class="history-time">{{ formatTransferTime(Number(h.created_at)) }}</span>
                 <span class="history-action">
                   {{ h.from_user ? (h.from_nick || h.from_user) : '铸造' }}
                   →

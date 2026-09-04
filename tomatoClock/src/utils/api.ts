@@ -139,6 +139,8 @@ export interface CompanionForm {
   name: string
   emoji: string
   desc: string
+  image?: string
+  video?: string
 }
 
 export interface CompanionState {
