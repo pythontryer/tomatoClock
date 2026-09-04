@@ -4,16 +4,19 @@ import { useTimer } from '@/composables/useTimer'
 import { useSound } from '@/composables/useSound'
 import { useNotification } from '@/composables/useNotification'
 import { useAppStore } from '@/stores/useAppStore'
+import { useUserStore } from '@/stores/useUserStore'
+import { generateItem, getCompanion } from '@/utils/api'
 import { SOUND_OPTIONS, focusCoins, FOCUS_GIFTS, getCelebration, plantStage } from '@/constants'
 import TimerSettings from './timer/TimerSettings.vue'
 import Companion from './Companion.vue'
 
 const store = useAppStore()
+const userStore = useUserStore()
 const sound = useSound()
 const notif = useNotification()
 
 const { playChime, previewSound, unlockAudio } = sound
-const { notifPerm, notifAction, inIframe, requestNotify, notify } = notif
+const { notifPerm, notifAction, inIframe, isSecure, requestNotify, notify } = notif
 
 // 番茄结束时的副作用：通知 + 提示音 + 奖励弹层 + 打开复盘 + 后台AI生成道具
 function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
@@ -29,8 +32,13 @@ function onFocusComplete(minutes: number, isLong: boolean, sessionId: string) {
   generateAiItemBackground()
 }
 
-// 后台AI生成道具：先显示生成中动画，成功后揭晓结果
+// 后台生成数字藏品道具：先获取小伙伴想要的道具，生成对应的藏品
 async function generateAiItemBackground() {
+  // 未登录则不生成服务器道具
+  if (!userStore.isLoggedIn) {
+    showReward(store.settings.focusMin)
+    return
+  }
   // 显示生成中动画
   reward.value = {
     gift: '✨',
@@ -39,18 +47,27 @@ async function generateAiItemBackground() {
   }
   clearTimers()
   try {
-    const item = await store.generateAiItemAction()
+    // 先获取小伙伴状态，知道它想要什么道具
+    let wanted = null
+    try {
+      const companion = await getCompanion()
+      wanted = companion.wanted
+    } catch {
+      // 获取失败则用随机道具
+    }
+    // 生成对应的数字藏品道具
+    const item = await generateItem(wanted ? { name: wanted.name, emoji: wanted.emoji, desc: wanted.desc } : undefined)
     if (item) {
       // 生成成功，揭晓结果
       reward.value = {
         gift: item.emoji,
         coins: 0,
         aiItem: item.name,
-        aiRarity: item.rarity
+        aiRarity: item.rarity,
+        imageUrl: item.image_url
       }
-      rewardTimer = setTimeout(() => (reward.value = null), 5000)
+      rewardTimer = setTimeout(() => (reward.value = null), 6000)
     } else {
-      // AI不可用或失败，恢复显示预设奖励
       showReward(store.settings.focusMin)
     }
   } catch {
@@ -68,6 +85,7 @@ const reward = ref<{
   coins: number
   aiItem?: string
   aiRarity?: string
+  imageUrl?: string
   generating?: boolean
 } | null>(null)
 const missMsg = ref<string | null>(null)
@@ -222,7 +240,13 @@ const notifyHint = computed(() => {
   }
   if (notifPerm.value === 'granted') return { cls: 'ok', text: '✅ 桌面通知已开启' }
   if (notifPerm.value === 'unsupported') {
-    return { cls: 'err', text: '当前浏览器不支持桌面通知' }
+    if (!isSecure) {
+      return {
+        cls: 'warn',
+        text: '⚠️ 当前为 HTTP 访问，浏览器已禁用桌面通知。请使用 HTTPS 访问后开启：https://49.233.88.171/ （页面内提醒仍正常工作）'
+      }
+    }
+    return { cls: 'err', text: '当前浏览器不支持桌面通知，建议使用 Chrome/Edge 浏览器（页面内提醒仍正常工作）' }
   }
   if (notifPerm.value === 'denied') {
     return inIframe
@@ -330,9 +354,12 @@ function openStandalone() {
         </template>
         <!-- AI道具结果 -->
         <template v-else-if="reward.aiItem">
-          <div class="reward-gift ai-reveal">{{ reward.gift }}</div>
+          <div v-if="reward.imageUrl" class="reward-image-wrap">
+            <img :src="reward.imageUrl" :alt="reward.aiItem" class="reward-item-image" />
+          </div>
+          <div v-else class="reward-gift ai-reveal">{{ reward.gift }}</div>
           <div class="reward-ai-item">
-            <span class="ai-label">✨ AI 生成道具</span>
+            <span class="ai-label">✨ 获得数字藏品</span>
             <span class="ai-name">{{ reward.aiItem }}</span>
             <span class="ai-rarity" :class="'rarity-' + (reward.aiRarity || 'common')">
               {{ reward.aiRarity === 'legendary' ? '传说' : reward.aiRarity === 'rare' ? '稀有' : '普通' }}
@@ -623,6 +650,9 @@ function openStandalone() {
 .perm-hint.err {
   color: var(--warn);
 }
+.perm-hint.warn {
+  color: #e67e22;
+}
 .perm-hint .standalone {
   display: block;
   margin: 8px auto 0;
@@ -790,6 +820,20 @@ function openStandalone() {
 }
 .ai-reveal {
   animation: aiReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.reward-image-wrap {
+  width: 100px;
+  height: 100px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 auto 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  animation: aiReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.reward-item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 @keyframes aiReveal {
   0% { transform: scale(0) rotate(-180deg); opacity: 0; filter: brightness(2); }

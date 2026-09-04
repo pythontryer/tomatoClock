@@ -23,7 +23,7 @@ describe('sanitize', () => {
     expect(res.data!.habits[0].remindAt).toBeNull()
     expect(res.data!.sessions[0].rating).toBe(0)
     expect(res.data!.tasks[0].estimate).toBe(0)
-    expect(res.data!.present).toEqual({ tasks: true, pomoCycle: true, activeTaskId: true })
+    expect(res.data!.present).toEqual({ tasks: true, pomoCycle: true, activeTaskId: true, evolution: false })
     expect(res.skipped).toEqual({ habits: 0, sessions: 0, tasks: 0 })
   })
 

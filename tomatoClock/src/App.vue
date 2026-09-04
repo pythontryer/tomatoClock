@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import BottomNav from './components/BottomNav.vue'
 import ToastHost from './components/ToastHost.vue'
 import { useAppStore } from '@/stores/useAppStore'
+import { useUserStore } from '@/stores/useUserStore'
 import { useHabitReminders } from '@/composables/useHabitReminders'
 
 const store = useAppStore()
+const userStore = useUserStore()
+const router = useRouter()
 useHabitReminders()
+
+onMounted(() => {
+  userStore.initFromStorage()
+  if (userStore.token) {
+    userStore.fetchUserInfo()
+  }
+})
 
 // 主题应用到根元素；导入旧备份缺 theme 键时回退亮色
 watch(
@@ -20,6 +31,11 @@ watch(
 function toggleTheme() {
   store.settings.theme = store.settings.theme === 'dark' ? 'light' : 'dark'
 }
+
+function handleLogout() {
+  userStore.logout()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -29,13 +45,23 @@ function toggleTheme() {
         <span class="brand-icon">🎯</span>
         <span class="brand-text">专注与习惯</span>
       </div>
-      <button
-        class="theme-toggle"
-        :title="store.settings.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
-        @click="toggleTheme"
-      >
-        {{ store.settings.theme === 'dark' ? '☀️' : '🌙' }}
-      </button>
+      <div class="topbar-actions">
+        <template v-if="userStore.isLoggedIn">
+          <div class="user-info" :title="userStore.user?.email">
+            <span class="user-avatar">👤</span>
+            <span class="user-nickname">{{ userStore.user?.nickname }}</span>
+          </div>
+          <button class="logout-btn" title="退出登录" @click="handleLogout">退出</button>
+        </template>
+        <router-link v-else to="/login" class="login-btn">登录</router-link>
+        <button
+          class="theme-toggle"
+          :title="store.settings.theme === 'dark' ? '切换到亮色' : '切换到暗色'"
+          @click="toggleTheme"
+        >
+          {{ store.settings.theme === 'dark' ? '☀️' : '🌙' }}
+        </button>
+      </div>
     </header>
 
     <main class="content">
@@ -63,6 +89,47 @@ function toggleTheme() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+}
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--card);
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+}
+.user-avatar { font-size: 16px; }
+.user-nickname {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.login-btn, .logout-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.login-btn:hover, .logout-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 .brand {
   display: flex;
