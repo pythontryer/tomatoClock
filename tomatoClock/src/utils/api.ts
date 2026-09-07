@@ -103,8 +103,8 @@ export async function getMyItems(): Promise<{ items: CollectibleItem[] }> {
   return apiRequest<{ items: CollectibleItem[] }>('/item/mine')
 }
 
-export async function verifyItem(itemId: string): Promise<{ valid: boolean; item?: CollectibleItem }> {
-  return apiRequest<{ valid: boolean; item?: CollectibleItem }>(`/item/verify?id=${encodeURIComponent(itemId)}`)
+export async function verifyItem(itemId: string): Promise<{ valid: boolean; signature_valid?: boolean; item?: CollectibleItem }> {
+  return apiRequest<{ valid: boolean; signature_valid?: boolean; item?: CollectibleItem }>(`/item/verify?id=${encodeURIComponent(itemId)}`)
 }
 
 export async function getItemHistory(itemId: string): Promise<{ transfers: Array<Record<string, unknown>> }> {
