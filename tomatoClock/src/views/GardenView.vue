@@ -35,18 +35,22 @@ async function giveItemToCompanion(item: CollectibleItem) {
   if (!companion.value || isEvolving.value) return
   isEvolving.value = true
   try {
-    const result = await evolveCompanion(item.name, item.emoji || '🎁')
+    const result = await evolveCompanion(item.name, item.emoji || '🎁', item.rarity)
     evolveResult.value = result
     showEvolveModal.value = true
     // 刷新小伙伴状态
     await loadCompanion()
-    // 刷新藏品列表（道具被消耗了？不，道具不消耗，只是触发进化）
-    // 实际上道具应该保留，因为是数字藏品
   } catch (e: unknown) {
     alert((e as Error).message || '进化失败')
   } finally {
     isEvolving.value = false
   }
+}
+
+// 形态层级名称
+const TIER_NAMES: Record<number, string> = { 1: '萌芽', 2: '成长', 3: '蜕变', 4: '传说' }
+function tierName(tier: number): string {
+  return TIER_NAMES[tier] || '萌芽'
 }
 
 function closeEvolveModal() {
@@ -218,10 +222,25 @@ function rarityLabel(rarity: string): string {
           <div class="form-info">
             <div class="form-name-row">
               <span class="form-name">{{ companion.name }}</span>
+              <span class="level-badge" :style="{ background: companion.form.tier_color || '#2bbf8a' }">
+                Lv.{{ companion.level }}
+              </span>
               <span class="form-evolve-count">已进化 {{ companion.evolve_count }} 次</span>
             </div>
-            <div class="form-title">{{ companion.form.name }}</div>
+            <div class="form-title">
+              {{ companion.form.name }}
+              <span class="form-tier" :style="{ color: companion.form.tier_color || '#2bbf8a' }">
+                {{ companion.form.tier_name || '萌芽' }}
+              </span>
+            </div>
             <div class="form-desc">{{ companion.form.desc }}</div>
+            <!-- 经验值进度条 -->
+            <div class="xp-bar-wrap">
+              <div class="xp-bar">
+                <div class="xp-fill" :style="{ width: companion.xp_progress + '%' }"></div>
+              </div>
+              <span class="xp-text">{{ companion.xp }} / {{ companion.xp_to_next }} XP</span>
+            </div>
           </div>
         </div>
 
@@ -332,9 +351,20 @@ function rarityLabel(rarity: string): string {
       <div v-if="showEvolveModal && evolveResult" class="modal-overlay" @click.self="closeEvolveModal">
         <div class="modal-card evolve-card">
           <div class="evolve-title">✨ 小伙伴进化了！</div>
+          <!-- 升级提示 -->
+          <div v-if="evolveResult.leveled_up" class="level-up-banner">
+            <span class="level-up-text">🎉 LEVEL UP!</span>
+            <span class="level-up-numbers">Lv.{{ evolveResult.old_level }} → Lv.{{ evolveResult.new_level }}</span>
+          </div>
+          <!-- 形态层级提升 -->
+          <div v-if="evolveResult.tier_up" class="tier-up-banner">
+            <span>🌟 形态突破！{{ tierName(evolveResult.old_tier) }} → {{ tierName(evolveResult.new_tier) }}</span>
+          </div>
           <div class="evolve-animation">
             <div class="evolve-old">
-              <span class="evolve-emoji">{{ evolveResult.old_form.emoji }}</span>
+              <video v-if="evolveResult.old_form.video" :src="evolveResult.old_form.video" autoplay loop muted playsinline class="evolve-video" />
+              <img v-else-if="evolveResult.old_form.image" :src="evolveResult.old_form.image" :alt="evolveResult.old_form.name" class="evolve-image" />
+              <span v-else class="evolve-emoji">{{ evolveResult.old_form.emoji }}</span>
               <span class="evolve-name">{{ evolveResult.old_form.name }}</span>
             </div>
             <div class="evolve-arrow">→</div>
@@ -346,6 +376,11 @@ function rarityLabel(rarity: string): string {
             </div>
           </div>
           <p class="evolve-reason">{{ evolveResult.reason }}</p>
+          <!-- XP获得展示 -->
+          <div class="xp-gained">
+            <span class="xp-gained-label">获得经验</span>
+            <span class="xp-gained-value">+{{ evolveResult.xp_gained }} XP</span>
+          </div>
           <div class="evolve-next">
             <span class="next-label">💭 现在想要</span>
             <span class="next-item">{{ evolveResult.next_item.emoji }} {{ evolveResult.next_item.name }}</span>
@@ -598,6 +633,15 @@ function rarityLabel(rarity: string): string {
   font-weight: 700;
   color: var(--text);
 }
+.level-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2bbf8a, #1a9d6e);
+  box-shadow: 0 2px 6px rgba(43,191,138,0.3);
+}
 .form-evolve-count {
   font-size: 12px;
   color: var(--muted);
@@ -610,10 +654,49 @@ function rarityLabel(rarity: string): string {
   color: #2bbf8a;
   font-weight: 600;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-tier {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 8px;
+  background: currentColor;
+  color: white !important;
+  opacity: 0.9;
 }
 .form-desc {
   font-size: 13px;
   color: var(--muted);
+  margin-bottom: 10px;
+}
+/* 经验值进度条 */
+.xp-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.xp-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(102,126,234,0.4);
+}
+.xp-text {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
+  white-space: nowrap;
 }
 
 /* 想要的道具 */
@@ -975,7 +1058,70 @@ function rarityLabel(rarity: string): string {
   font-size: 20px;
   font-weight: 700;
   color: #9b6bff;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+/* 升级横幅 */
+.level-up-banner {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: levelUpPulse 0.8s ease;
+}
+@keyframes levelUpPulse {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.level-up-text {
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: 2px;
+}
+.level-up-numbers {
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+  font-weight: 600;
+}
+/* 形态突破横幅 */
+.tier-up-banner {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5a3e00;
+  animation: tierUpGlow 1s ease;
+}
+@keyframes tierUpGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+  50% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+}
+/* XP获得展示 */
+.xp-gained {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+.xp-gained-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.xp-gained-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #667eea;
 }
 .evolve-animation {
   display: flex;

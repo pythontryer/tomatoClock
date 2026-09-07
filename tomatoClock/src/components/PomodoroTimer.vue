@@ -5,7 +5,7 @@ import { useSound } from '@/composables/useSound'
 import { useNotification } from '@/composables/useNotification'
 import { useAppStore } from '@/stores/useAppStore'
 import { useUserStore } from '@/stores/useUserStore'
-import { generateItem, getCompanion } from '@/utils/api'
+import { generateItem, getCompanion, pomodoroComplete } from '@/utils/api'
 import { SOUND_OPTIONS, focusCoins, FOCUS_GIFTS, getCelebration, plantStage } from '@/constants'
 import TimerSettings from './timer/TimerSettings.vue'
 import Companion from './Companion.vue'
@@ -47,24 +47,29 @@ async function generateAiItemBackground() {
   }
   clearTimers()
   try {
-    // 先获取小伙伴状态，知道它想要什么道具
+    // 并行：获得XP + 获取小伙伴状态
+    let xpResult = null
     let wanted = null
-    try {
-      const companion = await getCompanion()
-      wanted = companion.wanted
-    } catch {
-      // 获取失败则用随机道具
-    }
+    const [xpRes, compRes] = await Promise.allSettled([
+      pomodoroComplete(),
+      getCompanion()
+    ])
+    if (xpRes.status === 'fulfilled') xpResult = xpRes.value
+    if (compRes.status === 'fulfilled') wanted = compRes.value.wanted
+
     // 生成对应的数字藏品道具
     const item = await generateItem(wanted ? { name: wanted.name, emoji: wanted.emoji, desc: wanted.desc } : undefined)
     if (item) {
-      // 生成成功，揭晓结果
+      // 生成成功，揭晓结果（含XP获得）
       reward.value = {
         gift: item.emoji,
         coins: 0,
         aiItem: item.name,
         aiRarity: item.rarity,
-        imageUrl: item.image_url
+        imageUrl: item.image_url,
+        xpGained: xpResult?.xp_gained || 10,
+        leveledUp: xpResult?.leveled_up || false,
+        newLevel: xpResult?.new_level
       }
       rewardTimer = setTimeout(() => (reward.value = null), 6000)
     } else {
@@ -87,6 +92,9 @@ const reward = ref<{
   aiRarity?: string
   imageUrl?: string
   generating?: boolean
+  xpGained?: number
+  leveledUp?: boolean
+  newLevel?: number
 } | null>(null)
 const missMsg = ref<string | null>(null)
 const tendMsg = ref<string | null>(null)
@@ -364,6 +372,15 @@ function openStandalone() {
             <span class="ai-rarity" :class="'rarity-' + (reward.aiRarity || 'common')">
               {{ reward.aiRarity === 'legendary' ? '传说' : reward.aiRarity === 'rare' ? '稀有' : '普通' }}
             </span>
+          </div>
+          <!-- XP获得 -->
+          <div class="reward-xp">
+            <span class="xp-label">经验值</span>
+            <span class="xp-value">+{{ reward.xpGained || 10 }} XP</span>
+          </div>
+          <!-- 升级提示 -->
+          <div v-if="reward.leveledUp" class="reward-levelup">
+            🎉 升级到 Lv.{{ reward.newLevel }}！
           </div>
         </template>
         <!-- 普通奖励 -->
@@ -945,6 +962,42 @@ function openStandalone() {
 .ai-rarity.rarity-common { background: #2bbf8a; }
 .ai-rarity.rarity-rare { background: #9b6bff; }
 .ai-rarity.rarity-legendary { background: linear-gradient(135deg, #FFD700, #FFA500); }
+/* XP获得展示 */
+.reward-xp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+.xp-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.xp-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #667eea;
+}
+/* 升级提示 */
+.reward-levelup {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFD700;
+  background: linear-gradient(135deg, #667eea22, #764ba222);
+  padding: 4px 12px;
+  border-radius: 8px;
+  animation: levelupBounce 0.6s ease;
+}
+@keyframes levelupBounce {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
 .miss-hint {
   margin: 6px 0 0;
   font-size: 12px;

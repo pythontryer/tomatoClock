@@ -141,6 +141,9 @@ export interface CompanionForm {
   desc: string
   image?: string
   video?: string
+  tier?: number
+  tier_name?: string
+  tier_color?: string
 }
 
 export interface CompanionState {
@@ -149,6 +152,11 @@ export interface CompanionState {
   form: CompanionForm
   wanted: CompanionForm
   evolve_count: number
+  level: number
+  xp: number
+  xp_to_next: number
+  xp_progress: number
+  total_xp: number
   history: Array<{
     step: number
     from_form: string
@@ -166,15 +174,34 @@ export interface EvolveResult {
   next_item: CompanionForm
   evolve_count: number
   used_ai: boolean
+  rarity?: string
+  xp_gained: number
+  leveled_up: boolean
+  old_level: number
+  new_level: number
+  tier_up: boolean
+  old_tier: number
+  new_tier: number
+}
+
+export interface PomodoroXpResult {
+  xp_gained: number
+  leveled_up: boolean
+  old_level: number
+  new_level: number
 }
 
 export async function getCompanion(): Promise<CompanionState> {
   return apiRequest<CompanionState>('/companion', { method: 'GET' })
 }
 
-export async function evolveCompanion(itemName: string, itemEmoji: string): Promise<EvolveResult> {
+export async function evolveCompanion(itemName: string, itemEmoji: string, itemRarity = 'common'): Promise<EvolveResult> {
   return apiRequest<EvolveResult>('/companion/evolve', {
     method: 'POST',
-    body: JSON.stringify({ item_name: itemName, item_emoji: itemEmoji })
+    body: JSON.stringify({ item_name: itemName, item_emoji: itemEmoji, item_rarity: itemRarity })
   })
+}
+
+export async function pomodoroComplete(): Promise<PomodoroXpResult> {
+  return apiRequest<PomodoroXpResult>('/companion/pomodoro-complete', { method: 'POST' })
 }
