@@ -1,45 +1,51 @@
 :root {
-  --bg: #f0f2fa;
-  --bg-gradient: radial-gradient(ellipse at 20% 0%, #e8ecff 0%, #f0f2fa 40%, #f5f7fc 100%);
-  --card: #ffffff;
-  --card-border: rgba(91, 108, 255, 0.08);
-  --text: #1f2533;
-  --muted: #8b93a7;
-  --border: #e7eaf2;
-  --accent: #5b6cff;
-  --accent-2: #8b5cf6;
-  --accent-gradient: linear-gradient(135deg, #5b6cff 0%, #8b5cf6 100%);
-  --accent-soft: #eef0ff;
-  --good: #2bbf8a;
-  --warn: #ffae42;
-  --danger: #ff6b6b;
-  --shadow-sm: 0 2px 8px rgba(31, 37, 51, 0.04);
-  --shadow: 0 4px 24px rgba(31, 37, 51, 0.06), 0 1px 3px rgba(31, 37, 51, 0.04);
-  --shadow-lg: 0 12px 40px rgba(91, 108, 255, 0.12), 0 4px 12px rgba(31, 37, 51, 0.06);
-  --radius: 18px;
-  --radius-sm: 12px;
+  /* 黏土治愈风 - 奶油暖色系 */
+  --bg: #FFF8F0;
+  --bg-gradient: radial-gradient(ellipse at 20% 0%, #FFEED8 0%, #FFF8F0 40%, #FFFBF5 100%);
+  --card: #FFFFFF;
+  --card-border: rgba(255, 180, 120, 0.1);
+  --text: #4A3F35;
+  --muted: #9B8E80;
+  --border: #F0E6D8;
+  --accent: #FF6B6B;
+  --accent-2: #FF8E8E;
+  --accent-gradient: linear-gradient(135deg, #FF8E8E 0%, #FF6B6B 100%);
+  --accent-soft: #FFE5E5;
+  --good: #5ECFA0;
+  --warn: #FFB347;
+  --danger: #FF6B6B;
+  --shadow-sm: 0 2px 8px rgba(180, 140, 100, 0.06);
+  --shadow: 0 4px 24px rgba(180, 140, 100, 0.08), 0 1px 3px rgba(180, 140, 100, 0.05);
+  --shadow-lg: 0 12px 40px rgba(255, 140, 100, 0.14), 0 4px 12px rgba(180, 140, 100, 0.08);
+  --radius: 20px;
+  --radius-sm: 14px;
+  /* 稀有度颜色 */
+  --rarity-common: #5ECFA0;
+  --rarity-rare: #7BA3FF;
+  --rarity-epic: #B088FF;
+  --rarity-legendary: #FFD700;
   color-scheme: light;
 }
 
-/* 暗色模式：所有组件颜色都走变量，这里统一覆盖即可 */
+/* 暗色模式：暖调深色 */
 html.dark {
-  --bg: #0c0f1a;
-  --bg-gradient: radial-gradient(ellipse at 20% 0%, #161a2e 0%, #0c0f1a 50%, #0a0d16 100%);
-  --card: #161b2c;
-  --card-border: rgba(123, 140, 255, 0.12);
-  --text: #e8ebf5;
-  --muted: #7c86a0;
-  --border: #2a3245;
-  --accent: #7b8cff;
-  --accent-2: #a78bfa;
-  --accent-gradient: linear-gradient(135deg, #7b8cff 0%, #a78bfa 100%);
-  --accent-soft: #1e2440;
-  --good: #37c992;
-  --warn: #ffbe5c;
-  --danger: #ff7b7b;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 12px 40px rgba(123, 140, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --bg: #1A1512;
+  --bg-gradient: radial-gradient(ellipse at 20% 0%, #2A2018 0%, #1A1512 50%, #15100E 100%);
+  --card: #241D18;
+  --card-border: rgba(255, 180, 120, 0.12);
+  --text: #F0E6D8;
+  --muted: #8B7E70;
+  --border: #3A3028;
+  --accent: #FF8E8E;
+  --accent-2: #FFA5A5;
+  --accent-gradient: linear-gradient(135deg, #FFA5A5 0%, #FF8E8E 100%);
+  --accent-soft: #3A2020;
+  --good: #6EDFB0;
+  --warn: #FFC070;
+  --danger: #FF8E8E;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 12px 40px rgba(255, 140, 100, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 
@@ -106,7 +112,7 @@ input[type='date']:focus,
 textarea:focus,
 select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(91, 108, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.12);
 }
 
 input::placeholder,
@@ -208,11 +214,11 @@ textarea {
 
 .card:hover {
   box-shadow: var(--shadow-lg);
-  border-color: rgba(91, 108, 255, 0.15);
+  border-color: rgba(255, 140, 100, 0.18);
 }
 
 html.dark .card:hover {
-  border-color: rgba(123, 140, 255, 0.2);
+  border-color: rgba(255, 140, 100, 0.22);
 }
 
 .card h2 {
@@ -238,7 +244,7 @@ html.dark .card:hover {
 .btn:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
-  border-color: rgba(91, 108, 255, 0.15);
+  border-color: rgba(255, 107, 107, 0.15);
 }
 
 .btn:active {
@@ -249,17 +255,17 @@ html.dark .card:hover {
 .btn.primary {
   background: var(--accent-gradient);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(91, 108, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(255, 107, 107, 0.3);
 }
 
 .btn.primary:hover {
-  box-shadow: 0 6px 20px rgba(91, 108, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
   transform: translateY(-2px);
 }
 
 .btn.primary:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(91, 108, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
 }
 
 .btn.ghost {
@@ -306,4 +312,166 @@ html.dark .card:hover {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ========== 黏土治愈风 特有样式 ========== */
+
+/* 柔软弹性动效曲线 */
+.clay-bounce {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes clay-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes clay-bounce-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes legendary-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.55); }
+}
+
+@keyframes epic-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(176, 136, 255, 0.25); }
+  50% { box-shadow: 0 0 24px rgba(176, 136, 255, 0.45); }
+}
+
+@keyframes rare-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(123, 163, 255, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(123, 163, 255, 0.4); }
+}
+
+/* 小伙伴展示区 - 温暖渐变背景 */
+.companion-hero {
+  background: linear-gradient(135deg, #FFF5E6 0%, #FFEED8 50%, #FFF0E0 100%);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+html.dark .companion-hero {
+  background: linear-gradient(135deg, #2A2018 0%, #241D18 50%, #1E1814 100%);
+}
+
+/* 漂浮装饰圆点 */
+.companion-hero::before {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 200, 150, 0.3) 0%, transparent 70%);
+  top: -40px;
+  right: -40px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.companion-hero::after {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(255, 180, 180, 0.2) 0%, transparent 70%);
+  bottom: -30px;
+  left: -30px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* 藏品卡片 - 稀有度边框光效 */
+.collectible-card {
+  border-radius: 16px;
+  border: 3px solid var(--border);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.collectible-card:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.collectible-card.rarity-common {
+  border-color: var(--rarity-common);
+}
+
+.collectible-card.rarity-rare {
+  border-color: var(--rarity-rare);
+  animation: rare-glow 3s ease-in-out infinite;
+}
+
+.collectible-card.rarity-epic {
+  border-color: var(--rarity-epic);
+  animation: epic-glow 2.5s ease-in-out infinite;
+}
+
+.collectible-card.rarity-legendary {
+  border-color: var(--rarity-legendary);
+  animation: legendary-glow 2s ease-in-out infinite;
+}
+
+/* 等级徽章 */
+.level-badge {
+  background: linear-gradient(135deg, #FFB347, #FF8C42);
+  color: white;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 经验条 */
+.xp-bar {
+  height: 10px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFB347, #FF8C42);
+  border-radius: 5px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(255, 140, 66, 0.4);
+}
+
+/* 形态层级标签 */
+.tier-badge {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.tier-badge.tier-1 { background: #E0F7ED; color: #2BA87A; }
+.tier-badge.tier-2 { background: #E0EAFF; color: #4A7FE0; }
+.tier-badge.tier-3 { background: #F0E5FF; color: #8B5CF6; }
+.tier-badge.tier-4 { background: #FFF8DC; color: #DAA520; }
+
+html.dark .tier-badge.tier-1 { background: #1A3A2E; color: #5ECFA0; }
+html.dark .tier-badge.tier-2 { background: #1A2540; color: #7BA3FF; }
+html.dark .tier-badge.tier-3 { background: #2A1F40; color: #B088FF; }
+html.dark .tier-badge.tier-4 { background: #3A3218; color: #FFD700; }
+
+/* 导航栏毛玻璃 */
+.nav-glass {
+  background: rgba(255, 248, 240, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+html.dark .nav-glass {
+  background: rgba(26, 21, 18, 0.85);
 }

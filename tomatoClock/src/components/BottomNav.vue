@@ -36,25 +36,31 @@ const navItems = [
   justify-content: center;
   align-items: center;
   gap: 8px;
-  background: var(--card);
+  background: rgba(255, 248, 240, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 16px rgba(180, 140, 100, 0.08);
+  border-radius: 0 0 20px 20px;
   padding: 8px 16px calc(8px + env(safe-area-inset-top, 0px));
   padding-top: calc(8px + env(safe-area-inset-top, 0px));
   z-index: 100;
-  backdrop-filter: blur(12px);
-  background: color-mix(in srgb, var(--card) 85%, transparent);
 }
+
+html.dark .bottom-nav {
+  background: rgba(26, 21, 18, 0.88);
+}
+
 .nav-item {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  border-radius: 12px;
+  border-radius: 14px;
   text-decoration: none;
   color: var(--muted);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   font-size: 13px;
 }
@@ -62,14 +68,15 @@ const navItems = [
   color: var(--accent);
   background: var(--accent-soft);
   font-weight: 700;
+  transform: scale(1.05);
 }
 .nav-icon {
   font-size: 18px;
   line-height: 1;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .nav-item.active .nav-icon {
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 .nav-label {
   font-size: 13px;
