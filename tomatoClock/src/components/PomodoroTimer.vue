@@ -55,7 +55,14 @@ async function generateAiItemBackground() {
       getCompanion()
     ])
     if (xpRes.status === 'fulfilled') xpResult = xpRes.value
-    if (compRes.status === 'fulfilled') wanted = compRes.value.wanted
+    if (compRes.status === 'fulfilled') {
+      wanted = compRes.value.wanted
+      wantedItem.value = {
+        name: wanted?.name || '水滴',
+        emoji: wanted?.emoji || '💧',
+        image: wanted?.image
+      }
+    }
 
     // 生成对应的数字藏品道具
     const item = await generateItem(wanted ? { name: wanted.name, emoji: wanted.emoji, desc: wanted.desc } : undefined)
@@ -190,6 +197,21 @@ const { mode, running, display, progress, cycleInfo, start, pause, reset, switch
   onFocusComplete,
   onBreakComplete
 })
+
+// 伙伴当前需要的道具（从后端加载，显示在小绿旁边）
+const wantedItem = ref<{ name: string; emoji: string; image?: string } | null>(null)
+async function loadWantedItem() {
+  if (!userStore.isLoggedIn) { wantedItem.value = null; return }
+  try {
+    const comp = await getCompanion()
+    wantedItem.value = {
+      name: comp.wanted?.name || '水滴',
+      emoji: comp.wanted?.emoji || '💧',
+      image: comp.wanted?.image
+    }
+  } catch { /* 静默失败 */ }
+}
+onMounted(loadWantedItem)
 
 // 键盘快捷键：空格 开始/暂停，R 重置（输入控件聚焦时不触发）
 function onKey(e: KeyboardEvent) {
@@ -340,7 +362,14 @@ function openStandalone() {
         :name="store.companion.name"
         @tend="onTend"
       />
-      <div class="coin-badge" title="专注露珠，完成专注获得">💧 {{ store.companion.coins }}</div>
+      <div class="coin-badge" :title="wantedItem ? `小钰需要：${wantedItem.name}` : '专注露珠'">
+        <template v-if="wantedItem">
+          <img v-if="wantedItem.image" :src="wantedItem.image" class="wanted-icon" :alt="wantedItem.name" />
+          <span v-else>{{ wantedItem.emoji }}</span>
+          <span class="wanted-label">{{ wantedItem.name }}</span>
+        </template>
+        <template v-else>💧 {{ store.companion.coins }}</template>
+      </div>
     </div>
 
     <transition name="fade">
@@ -792,14 +821,28 @@ function openStandalone() {
   position: absolute;
   right: 0;
   top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   font-weight: 700;
   padding: 5px 12px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(91, 108, 255, 0.1), rgba(139, 92, 246, 0.08));
-  color: var(--accent);
-  border: 1px solid rgba(91, 108, 255, 0.15);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 180, 120, 0.08));
+  color: #e05555;
+  border: 1px solid rgba(255, 107, 107, 0.2);
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+.wanted-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.wanted-label {
+  font-size: 12px;
+  font-weight: 600;
 }
 .reward-pop {
   position: absolute;
