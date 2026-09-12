@@ -21,6 +21,10 @@ const props = defineProps<{
   /** 庆祝特效字符（如 🎉 / ⭐ / 💗），仅在 happy 时飘出 */
   celebration?: string
   name?: string
+  /** 伙伴当前形态图片URL（黏土风PNG），有则优先显示 */
+  formImage?: string
+  /** 伙伴当前形态视频URL */
+  formVideo?: string
 }>()
 
 const emit = defineEmits<{ (e: 'tend'): void }>()
@@ -69,7 +73,12 @@ const particle = computed(() => props.celebration || '🎉')
       >
     </div>
 
-    <svg class="plant" viewBox="0 0 160 160" aria-hidden="true">
+    <!-- 有黏土风形态图时优先显示 -->
+    <video v-if="formVideo" :src="formVideo" autoplay loop muted playsinline class="form-media" />
+    <img v-else-if="formImage" :src="formImage" :alt="name || '伙伴'" class="form-media" />
+
+    <!-- 回退：SVG花盆植物 -->
+    <svg v-else class="plant" viewBox="0 0 160 160" aria-hidden="true">
       <defs>
         <!-- 花盆渐变 -->
         <linearGradient id="potGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -183,6 +192,23 @@ const particle = computed(() => props.celebration || '🎉')
   width: 100%;
   display: block;
   transform-origin: 50% 100%;
+}
+.form-media {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  transition: transform 0.3s ease;
+}
+.companion:hover .form-media {
+  transform: scale(1.05);
+}
+.companion.happy .form-media {
+  animation: pop 0.5s ease;
+}
+.companion.focusing .form-media {
+  animation: sway 2.6s ease-in-out infinite;
 }
 .pot {
   /* 渐变填充由 SVG defs 控制 */

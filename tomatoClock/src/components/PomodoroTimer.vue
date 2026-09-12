@@ -381,7 +381,9 @@ function openStandalone() {
         :skin-id="store.companion.activeCompanion"
         :stage="plantStage(store.pomoCycle)"
         :celebration="celebrationChar"
-        :name="store.companion.name"
+        :name="formName || store.companion.name"
+        :form-image="formImage"
+        :form-video="formVideo"
         @tend="onTend"
       />
       <div class="coin-badge" :title="wantedItem ? `小钰需要：${wantedItem.name}` : '专注露珠'">
