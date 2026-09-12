@@ -244,16 +244,6 @@ function rarityLabel(rarity: string): string {
           </div>
         </div>
 
-        <!-- 想要的道具 -->
-        <div class="wanted-box">
-          <span class="wanted-label">💭 现在想要</span>
-          <span class="wanted-item">
-            {{ companion.wanted.emoji }} {{ companion.wanted.name }}
-          </span>
-          <span class="wanted-hint">{{ companion.wanted.desc }}</span>
-          <span class="wanted-tip">完成番茄钟可能获得它想要的道具~</span>
-        </div>
-
         <!-- 专注等级 -->
         <div class="focus-level">
           <div class="level-header">
@@ -380,11 +370,6 @@ function rarityLabel(rarity: string): string {
           <div class="xp-gained">
             <span class="xp-gained-label">获得经验</span>
             <span class="xp-gained-value">+{{ evolveResult.xp_gained }} XP</span>
-          </div>
-          <div class="evolve-next">
-            <span class="next-label">💭 现在想要</span>
-            <span class="next-item">{{ evolveResult.next_item.emoji }} {{ evolveResult.next_item.name }}</span>
-            <span class="next-desc">{{ evolveResult.next_item.desc }}</span>
           </div>
           <div v-if="!evolveResult.used_ai" class="evolve-mode">
             <span class="mode-hint">（AI 未配置，使用预设进化路径）</span>

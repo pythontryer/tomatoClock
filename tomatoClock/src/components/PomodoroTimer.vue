@@ -1,11 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useTimer } from '@/composables/useTimer'
 import { useSound } from '@/composables/useSound'
 import { useNotification } from '@/composables/useNotification'
 import { useAppStore } from '@/stores/useAppStore'
 import { useUserStore } from '@/stores/useUserStore'
-import { generateItem, getCompanion, pomodoroComplete } from '@/utils/api'
+import { generateItem, getCompanion, getMyItems, evolveCompanion, pomodoroComplete } from '@/utils/api'
 import { SOUND_OPTIONS, focusCoins, FOCUS_GIFTS, getCelebration, plantStage } from '@/constants'
 import TimerSettings from './timer/TimerSettings.vue'
 import Companion from './Companion.vue'
@@ -132,19 +132,41 @@ function showMiss() {
   missTimer = setTimeout(() => (missMsg.value = null), 4000)
 }
 function onTend() {
-  const ok = store.tendCompanion()
-  clearTimers()
-  if (ok) {
-    tendMsg.value = '💧 浇水成功！小绿很开心~'
-    // 触发开心状态：展示水滴粒子效果
-    reward.value = { gift: '💧', coins: 0 }
-    rewardTimer = setTimeout(() => (reward.value = null), 1500)
-  } else {
-    tendMsg.value = '💧 露珠不足，完成专注获取更多露珠吧'
+  // 点击小绿：使用背包中的道具触发进化
+  if (!userStore.isLoggedIn) {
+    tendMsg.value = '💧 先完成一个番茄钟，获得道具后再来照顾小绿吧~'
+    clearTimers()
+    tendTimer = setTimeout(() => (tendMsg.value = null), 3000)
+    return
   }
-  tendTimer = setTimeout(() => (tendMsg.value = null), ok ? 1800 : 2500)
+  evolveWithBackpack()
 }
 
+// 自动用背包中第一个道具进化
+async function evolveWithBackpack() {
+  try {
+    const res = await getMyItems()
+    const items = res.items || []
+    if (items.length === 0) {
+      tendMsg.value = '🎁 背包空空的，完成一个番茄钟获得道具吧~'
+      clearTimers()
+      tendTimer = setTimeout(() => (tendMsg.value = null), 3000)
+      return
+    }
+    const item = items[0]
+    tendMsg.value = '✨ 使用「' + item.name + '」...'
+    const result = await evolveCompanion(item.name, item.emoji || '🎁', item.rarity)
+    tendMsg.value = '🎉 小钰进化为「' + result.new_form.name + '」！'
+    clearTimers()
+    tendTimer = setTimeout(() => (tendMsg.value = null), 4000)
+    // 刷新想要的道具
+    await loadWantedItem()
+  } catch (e: unknown) {
+    tendMsg.value = '😢 ' + ((e as Error).message || '进化失败')
+    clearTimers()
+    tendTimer = setTimeout(() => (tendMsg.value = null), 3000)
+  }
+}
 /** 放弃当前专注（仅在专注进行中点击重置才算“提前退出”，给温和提示；暂停后重置不算） */
 function onReset() {
   if (running.value && mode.value === 'focus') showMiss()
