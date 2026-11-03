@@ -156,6 +156,9 @@ async function evolveWithBackpack() {
     const item = items[0]
     tendMsg.value = '✨ 使用「' + item.name + '」...'
     const result = await evolveCompanion(item.name, item.emoji || '🎁', item.rarity)
+    formImage.value = result.new_form.image
+    formVideo.value = result.new_form.video
+    formName.value = result.new_form.name
     tendMsg.value = '🎉 小钰进化为「' + result.new_form.name + '」！'
     clearTimers()
     tendTimer = setTimeout(() => (tendMsg.value = null), 4000)
@@ -222,6 +225,9 @@ const { mode, running, display, progress, cycleInfo, start, pause, reset, switch
 
 // 伙伴当前需要的道具（从后端加载，显示在小绿旁边）
 const wantedItem = ref<{ name: string; emoji: string; image?: string } | null>(null)
+const formImage = ref<string | undefined>(undefined)
+const formVideo = ref<string | undefined>(undefined)
+const formName = ref<string>('')
 async function loadWantedItem() {
   if (!userStore.isLoggedIn) { wantedItem.value = null; return }
   try {
@@ -231,6 +237,9 @@ async function loadWantedItem() {
       emoji: comp.wanted?.emoji || '💧',
       image: comp.wanted?.image
     }
+    formImage.value = comp.form?.image
+    formVideo.value = comp.form?.video
+    formName.value = comp.form?.name
   } catch { /* 静默失败 */ }
 }
 onMounted(loadWantedItem)
