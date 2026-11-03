@@ -304,7 +304,7 @@ const notifyHint = computed(() => {
     if (!isSecure) {
       return {
         cls: 'warn',
-        text: '⚠️ 当前为 HTTP 访问，浏览器已禁用桌面通知。请使用 HTTPS 访问后开启：https://49.233.88.171/ （页面内提醒仍正常工作）'
+        text: '⚠️ 当前为 HTTP 访问，浏览器已禁用桌面通知。请使用 HTTPS 访问后开启（页面内提醒仍正常工作）'
       }
     }
     return { cls: 'err', text: '当前浏览器不支持桌面通知，建议使用 Chrome/Edge 浏览器（页面内提醒仍正常工作）' }
